@@ -1,0 +1,1776 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TIPS - Cotizador Maquila</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #004aad;
+            --secondary: #00c2ff;
+            --dark: #1a1a1a;
+            --light: #f4f7f6;
+            --accent: #ff4b2b;
+            --glass: rgba(255, 255, 255, 0.9);
+            --shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            color: var(--dark);
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+            background: var(--glass);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: var(--shadow);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            position: relative;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            border-bottom: 2px solid var(--primary);
+            padding-bottom: 20px;
+        }
+
+        .logo-area {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .logo-area h1 {
+            font-size: 2rem;
+            color: var(--primary);
+            font-weight: 800;
+            letter-spacing: -1px;
+        }
+
+        .logo-area p {
+            font-size: 0.9rem;
+            color: #666;
+            margin-top: -5px;
+        }
+
+        .maquila-badge {
+            display: inline-block;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-top: 4px;
+        }
+
+        .folio-box {
+            background: var(--dark);
+            color: white;
+            padding: 5px 15px;
+            border-radius: 5px;
+            font-weight: 700;
+            font-size: 1.1rem;
+            margin-bottom: 10px;
+            display: inline-block;
+        }
+
+        .section-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .config-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .panel {
+            background: rgba(255, 255, 255, 0.5);
+            padding: 20px;
+            border-radius: 12px;
+            border: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-bottom: 15px;
+        }
+
+        label {
+            font-weight: 600;
+            font-size: 0.8rem;
+            color: var(--primary);
+            text-transform: uppercase;
+        }
+
+        select,
+        input {
+            width: 100%;
+            max-width: 100%;
+            box-sizing: border-box;
+            padding: 10px 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            outline: none;
+            transition: all 0.3s;
+            background: white;
+        }
+
+        select {
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            overflow: hidden;
+        }
+        
+        select option {
+            white-space: normal;
+        }
+
+        select:focus,
+        input:focus {
+            border-color: var(--secondary);
+            box-shadow: 0 0 0 3px rgba(0, 194, 255, 0.1);
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            font-size: 0.9rem;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #003a8c;
+            transform: translateY(-2px);
+        }
+
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #218838;
+            transform: translateY(-2px);
+        }
+
+        .btn-pdf {
+            background: var(--accent);
+            color: white;
+        }
+
+        .btn-pdf:hover {
+            background: #e63e20;
+            transform: translateY(-2px);
+        }
+
+        .btn-history {
+            background: var(--dark);
+            color: white;
+        }
+
+        .btn-history:hover {
+            background: #000;
+            transform: translateY(-2px);
+        }
+
+        .btn-sync {
+            background: #6c5ce7;
+            color: white;
+        }
+
+        .btn-sync:hover {
+            background: #5a4bd1;
+            transform: translateY(-2px);
+        }
+
+        .btn-sync.loading {
+            opacity: 0.7;
+            pointer-events: none;
+        }
+
+        .actions-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            margin-top: 20px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .main-actions {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 30px;
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        }
+
+        th {
+            background: var(--primary);
+            color: white;
+            padding: 12px 15px;
+            text-align: left;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+        }
+
+        td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #f0f0f0;
+            font-size: 0.9rem;
+        }
+
+        .summary-row {
+            background: #fdfdfd;
+            font-size: 0.9rem;
+            color: #555;
+        }
+
+        .summary-row td {
+            border-bottom: 2px solid #fff;
+            padding: 8px 15px;
+        }
+
+        .total-row {
+            font-weight: 800;
+            font-size: 1.1rem;
+            background: #fdfdfd;
+        }
+
+        .total-amount {
+            color: var(--primary);
+            font-size: 1.3rem;
+        }
+
+        .history-panel {
+            position: fixed;
+            top: 0;
+            right: -350px;
+            width: 350px;
+            height: 100vh;
+            background: white;
+            box-shadow: -10px 0 30px rgba(0, 0, 0, 0.1);
+            z-index: 1000;
+            padding: 30px;
+            transition: right 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            overflow-y: auto;
+        }
+
+        .history-panel.open {
+            right: 0;
+        }
+
+        .history-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 15px;
+        }
+
+        .history-item {
+            padding: 15px;
+            border: 1px solid #eee;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+        }
+
+        .history-item:hover {
+            border-color: var(--primary);
+            background: rgba(0, 74, 173, 0.02);
+            transform: translateX(-5px);
+        }
+
+        .history-item h4 {
+            font-size: 0.95rem;
+            margin-bottom: 5px;
+            color: var(--primary);
+        }
+
+        .history-item p {
+            font-size: 0.8rem;
+            color: #777;
+            margin: 2px 0;
+        }
+
+        .history-item .delete-hist {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            color: #ccc;
+            font-size: 0.8rem;
+            cursor: pointer;
+        }
+
+        .history-item .delete-hist:hover {
+            color: var(--accent);
+        }
+
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.2);
+            display: none;
+            z-index: 999;
+        }
+
+        .overlay.visible {
+            display: block;
+        }
+
+        .remove-btn {
+            color: var(--accent);
+            cursor: pointer;
+            text-align: center;
+            font-size: 1.2rem;
+        }
+
+        footer {
+            margin-top: 40px;
+            text-align: center;
+            font-size: 0.8rem;
+            color: #888;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            margin-left: 10px;
+        }
+
+        .status-badge.online {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-badge.offline {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .status-badge.saving {
+            background: #fff3cd;
+            color: #856404;
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        /* ===== LOGIN SCREEN ===== */
+        #login-screen {
+            position: fixed;
+            inset: 0;
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #0a0f2e 0%, #0d2763 40%, #004aad 100%);
+            overflow: hidden;
+        }
+
+        #login-screen::before {
+            content: '';
+            position: absolute;
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, rgba(0,194,255,0.12) 0%, transparent 70%);
+            top: -100px;
+            left: -100px;
+            animation: pulse-glow 6s ease-in-out infinite alternate;
+        }
+
+        #login-screen::after {
+            content: '';
+            position: absolute;
+            width: 500px;
+            height: 500px;
+            background: radial-gradient(circle, rgba(0,74,173,0.15) 0%, transparent 70%);
+            bottom: -80px;
+            right: -80px;
+            animation: pulse-glow 8s ease-in-out infinite alternate-reverse;
+        }
+
+        @keyframes pulse-glow {
+            from { transform: scale(1); opacity: 0.6; }
+            to   { transform: scale(1.3); opacity: 1; }
+        }
+
+        @keyframes float-up {
+            from { opacity: 0; transform: translateY(40px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        .login-card {
+            position: relative;
+            z-index: 1;
+            background: rgba(255,255,255,0.06);
+            backdrop-filter: blur(28px);
+            -webkit-backdrop-filter: blur(28px);
+            border: 1px solid rgba(255,255,255,0.15);
+            border-radius: 28px;
+            padding: 52px 48px 44px;
+            width: 420px;
+            max-width: 92vw;
+            box-shadow: 0 25px 60px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.1);
+            animation: float-up 0.7s cubic-bezier(0.23,1,0.32,1) both;
+        }
+
+        .login-logo-ring {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #004aad, #00c2ff);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 22px;
+            font-size: 2rem;
+            box-shadow: 0 0 0 6px rgba(0,194,255,0.15), 0 8px 24px rgba(0,74,173,0.5);
+        }
+
+        .login-title {
+            text-align: center;
+            color: #ffffff;
+            font-size: 1.75rem;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            margin-bottom: 4px;
+        }
+
+        .login-subtitle {
+            text-align: center;
+            color: rgba(255,255,255,0.55);
+            font-size: 0.82rem;
+            margin-bottom: 36px;
+            letter-spacing: 0.3px;
+        }
+
+        .login-field {
+            margin-bottom: 18px;
+        }
+
+        .login-field label {
+            display: block;
+            color: rgba(255,255,255,0.7);
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+        }
+
+        .login-field-wrap {
+            position: relative;
+        }
+
+        .login-field-wrap .field-icon {
+            position: absolute;
+            left: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 1rem;
+            opacity: 0.5;
+        }
+
+        .login-field input {
+            width: 100%;
+            padding: 13px 14px 13px 42px;
+            background: rgba(255,255,255,0.08);
+            border: 1.5px solid rgba(255,255,255,0.12);
+            border-radius: 12px;
+            color: #ffffff;
+            font-size: 0.95rem;
+            outline: none;
+            transition: border-color 0.25s, background 0.25s, box-shadow 0.25s;
+            box-sizing: border-box;
+        }
+
+        .login-field input::placeholder {
+            color: rgba(255,255,255,0.3);
+        }
+
+        .login-field input:focus {
+            border-color: #00c2ff;
+            background: rgba(0,194,255,0.08);
+            box-shadow: 0 0 0 4px rgba(0,194,255,0.15);
+        }
+
+        .login-btn {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #004aad 0%, #00c2ff 100%);
+            color: white;
+            border: none;
+            border-radius: 14px;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            margin-top: 10px;
+            letter-spacing: 0.5px;
+            transition: transform 0.2s, box-shadow 0.2s, filter 0.2s;
+            box-shadow: 0 8px 24px rgba(0,74,173,0.4);
+        }
+
+        .login-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 32px rgba(0,74,173,0.55);
+            filter: brightness(1.08);
+        }
+
+        .login-btn:active {
+            transform: translateY(0);
+        }
+
+        .login-error {
+            color: #ff6b6b;
+            font-size: 0.8rem;
+            text-align: center;
+            margin-top: 14px;
+            min-height: 20px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            animation: float-up 0.3s ease both;
+        }
+
+        .login-footer {
+            text-align: center;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255,255,255,0.08);
+            color: rgba(255,255,255,0.35);
+            font-size: 0.72rem;
+            line-height: 1.6;
+        }
+
+        .login-footer strong {
+            color: rgba(255,255,255,0.6);
+        }
+
+        /* Print styles */
+        @media print {
+            body {
+                background: white;
+                padding: 0;
+            }
+
+            .container {
+                box-shadow: none;
+                border: none;
+                width: 100%;
+                max-width: none;
+                padding: 20px;
+            }
+
+            .btn,
+            .actions-row,
+            .remove-btn,
+            .history-panel,
+            .overlay,
+            .panel:not(.print-info) {
+                display: none !important;
+            }
+
+            .config-grid {
+                grid-template-columns: 1fr;
+                gap: 10px;
+            }
+
+            .panel.print-info {
+                background: none;
+                border: none;
+                padding: 0;
+            }
+
+            .logo-area h1 {
+                color: black !important;
+            }
+
+            .folio-box {
+                border: 1px solid black;
+                background: none;
+                color: black;
+            }
+
+            .folio-box input {
+                color: black !important;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- ===== LOGIN SCREEN ===== -->
+    <div id="login-screen" role="dialog" aria-modal="true" aria-label="Inicio de sesión">
+        <div class="login-card">
+            <div class="login-logo-ring">🏭</div>
+            <h1 class="login-title">TIPS Maquila</h1>
+            <p class="login-subtitle">Cotizador de Servicios &nbsp;·&nbsp; Versión 08</p>
+
+            <div class="login-field">
+                <label for="login-user">Usuario</label>
+                <div class="login-field-wrap">
+                    <span class="field-icon">👤</span>
+                    <input type="text" id="login-user" placeholder="Ingresa tu usuario" autocomplete="username" autocapitalize="none">
+                </div>
+            </div>
+
+            <div class="login-field">
+                <label for="login-pass">Contraseña</label>
+                <div class="login-field-wrap">
+                    <span class="field-icon">🔒</span>
+                    <input type="password" id="login-pass" placeholder="Ingresa tu contraseña" autocomplete="current-password"
+                        onkeydown="if(event.key==='Enter') doLogin()">
+                </div>
+            </div>
+
+            <button class="login-btn" onclick="doLogin()" id="login-submit-btn">Ingresar →</button>
+
+            <div class="login-error" id="login-error-msg"></div>
+
+            <div class="login-footer">
+                <p><strong>© Propiedad de Sheila Vázquez Rosas</strong></p>
+                <p>TIPS &mdash; Training Industrial Project and Services</p>
+                <p>Versión 08 &nbsp;·&nbsp; Todos los derechos reservados</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="overlay" id="overlay" onclick="toggleHistory()"></div>
+
+    <div class="history-panel" id="history-panel">
+        <div class="history-header">
+            <h3>Banco de Cotizaciones</h3>
+            <button class="btn" style="background:none" onclick="toggleHistory()">✕</button>
+        </div>
+        <div id="history-list">
+            <p style="text-align:center; color:#999; margin-top:20px;">Cargando...</p>
+        </div>
+    </div>
+
+    <div class="container" id="main-app" style="display:none;">
+        <header>
+            <div class="logo-area">
+                <div>
+                    <h1>TIPS</h1>
+                    <p>Training Industrial Project and Services</p>
+                    <span class="maquila-badge">🏭 Maquila</span>
+                    <span id="connection-status" class="status-badge offline">⏳ Conectando...</span>
+                </div>
+            </div>
+            <div style="text-align: right">
+                <div class="folio-box" style="display: inline-flex; align-items: center; gap: 5px;">
+                    <span>Folio:</span>
+                    <input type="text" id="folio-input" style="background: transparent; color: white; border: none; font-weight: 700; font-size: 1.1rem; width: 100px; outline: none; padding: 0; text-align: left;" onchange="updateFolio(this.value)">
+                </div>
+                <h2 style="color: var(--primary)">Cotización de Servicios - Maquila</h2>
+                <p id="current-date"></p>
+            </div>
+        </header>
+
+        <div class="config-grid">
+            <!-- Client Details -->
+            <div class="panel print-info">
+                <div class="section-title">
+                    <span>👤</span> Datos del Cliente
+                </div>
+                <div class="form-group">
+                    <label>Empresa Cliente</label>
+                    <input type="text" id="client-company" placeholder="Nombre de la empresa...">
+                </div>
+                <div class="form-group">
+                    <label>Atención a (Dirigido a)</label>
+                    <input type="text" id="client-contact" placeholder="Nombre del contacto...">
+                </div>
+                <div class="form-group">
+                    <label>📍 Ubicación del Proyecto</label>
+                    <input type="text" id="ubicacion-proyecto" placeholder="Ciudad, Estado...">
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                    <div class="form-group">
+                        <label>⏱️ Tiempo de Entrega</label>
+                        <select id="tiempo-entrega">
+                            <option value="35 días hábiles">35 días hábiles</option>
+                            <option value="15 días hábiles (+20% extra)">15 días hábiles (+20%)</option>
+                            <option value="7 días - Urgencia (+50% extra)">7 días - Urgencia (+50%)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>💳 Pago para Iniciar</label>
+                        <select id="pago-iniciar">
+                            <option value="50% anticipo, 50% al entregar">50% / 50%</option>
+                            <option value="100%">100%</option>
+                            <option value="20% anticipo, 80% al entregar">20% / 80%</option>
+                            <option value="Crédito 45 días">Crédito 45 días</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Quién Cotiza</label>
+                    <div style="display: flex; gap: 8px;">
+                        <input type="text" id="quien-cotiza" placeholder="Nombre..." style="flex: 1;" onchange="updateQuienCotiza(this.value)">
+                        <select id="select-predefined-cotiza" onchange="selectPredefinedCotiza(this.value)" style="width: 130px; font-size: 0.85rem; padding: 5px;">
+                            <option value="">-- Rápido --</option>
+                            <option value="Aixa">Aixa J. Mora</option>
+                            <option value="Sheila">Ing. Sheila V. Rosas</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group" style="margin-bottom:0">
+                    <label>Correo del Cotizador</label>
+                    <input type="text" id="correo-cotiza" placeholder="Correo..." onchange="updateCorreoCotiza(this.value)">
+                </div>
+            </div>
+
+            <!-- Service Picker -->
+            <div class="panel">
+                <div class="section-title">
+                    <span>🛠️</span> Selección de Servicios
+                </div>
+                <div class="form-group">
+                    <label>Categoría</label>
+                    <select id="category-select" onchange="updateNorms()">
+                        <option value="">Seleccione...</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Servicio / Norma</label>
+                    <select id="norm-select"></select>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                    <div class="form-group" style="justify-content: flex-start; align-items: flex-end;">
+                        <button class="btn" style="background:#4a5568" onclick="addManualItem()">
+                            ➕ Añadir Manual
+                        </button>
+                    </div>
+                    <div class="form-group" style="justify-content: flex-end; align-items: flex-end;">
+                        <button class="btn btn-primary" onclick="addItem()">
+                            ➕ Añadir
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <table id="quote-table">
+            <thead>
+                <tr>
+                    <th style="width: 22%">Servicio</th>
+                    <th style="width: 43%">Alcance / Descripción</th>
+                    <th style="width: 8%; text-align: center">Cantidad</th>
+                    <th style="width: 20%; text-align: right">Inversión (Editable)</th>
+                    <th style="width: 7%" class="remove-btn"></th>
+                </tr>
+            </thead>
+            <tbody id="quote-body">
+                <!-- Items added here -->
+            </tbody>
+            <tfoot>
+                <tr class="summary-row">
+                    <td colspan="3" style="text-align: right">SUBTOTAL SERVICIOS:</td>
+                    <td style="text-align: right" id="subtotal-raw">$ 0.00</td>
+                    <td></td>
+                </tr>
+                <tr class="summary-row">
+                    <td colspan="3" style="text-align: right">DESCUENTO:</td>
+                    <td
+                        style="text-align: right; display: flex; align-items: center; justify-content: flex-end; gap: 5px;">
+                        <input type="number" id="global-discount" value="0" step="1"
+                            style="text-align: right; width: 80px; font-weight: bold; border: none; background: #fff5f5;"
+                            onchange="updateTotals()">
+                        <select id="discount-type" onchange="updateDiscountType()"
+                            style="padding: 2px; border: none; background: #fff5f5; font-weight: bold; cursor: pointer;">
+                            <option value="amount">$</option>
+                            <option value="percent">%</option>
+                        </select>
+                    </td>
+                    <td></td>
+                </tr>
+                <tr class="summary-row">
+                    <td colspan="3" style="text-align: right">IVA (16%):</td>
+                    <td
+                        style="text-align: right; display: flex; align-items: center; justify-content: flex-end; gap: 10px;">
+                        <span id="iva-amount">$ 0.00</span>
+                        <input type="checkbox" id="iva-toggle" checked onchange="updateTotals()"
+                            style="width: 20px; height: 20px;">
+                    </td>
+                    <td></td>
+                </tr>
+                <tr class="total-row">
+                    <td colspan="3" style="text-align: right">TOTAL GENERAL:</td>
+                    <td style="text-align: right" class="total-amount" id="total-general">$ 0.00</td>
+                    <td></td>
+                </tr>
+            </tfoot>
+        </table>
+
+        <div class="actions-row">
+            <div>
+                <button class="btn btn-history" onclick="toggleHistory()">
+                    📜 Ver Banco de Cotizaciones
+                </button>
+                <button class="btn btn-sync" onclick="syncFromCloud()" id="sync-btn">
+                    🔄 Sincronizar
+                </button>
+            </div>
+            <div class="main-actions">
+                <button class="btn" style="background:#eee" onclick="resetQuote()">
+                    🗑️ Nueva
+                </button>
+                <button class="btn btn-success" onclick="saveToBank()" id="save-btn">
+                    💾 Guardar en Banco
+                </button>
+                <button class="btn btn-pdf" onclick="generatePDF()">
+                    📄 PDF
+                </button>
+                <button class="btn btn-success" style="background: #107c41" onclick="exportToExcel()">
+                    📊 Excel
+                </button>
+            </div>
+        </div>
+
+        <footer>
+            <p>Software desarrollado para <strong>TIPS</strong> &nbsp;|&nbsp; <strong>Versión 08</strong></p>
+            <p style="margin-top:4px;">© Propiedad de <strong>Sheila Vázquez Rosas</strong> &nbsp;·&nbsp; Todos los derechos reservados</p>
+        </footer>
+    </div>
+
+    <script src="pricingData.js"></script>
+    <script>
+        // ============================================================
+        // CONFIGURACIÓN DE SUPABASE
+        // ============================================================
+        const SUPABASE_BASE_URL = 'https://jsomwasrfetoqmxhtixg.supabase.co';
+        const SUPABASE_ANON_KEY = 'sb_publishable_OfCiwAJyb3X4PiaMimEpXg_ru4QrvAn';
+
+        // Inicializar cliente de Supabase (usando const para evitar redeclaración)
+        const supabaseClient = window.supabase.createClient(SUPABASE_BASE_URL, SUPABASE_ANON_KEY);
+
+        // ============================================================
+        // STATE
+        // ============================================================
+        let state = {
+            folio: "COT00001",
+            date: new Date().toLocaleDateString(),
+            client: "",
+            contact: "",
+            ubicacion: "",
+            pricingType: "Maquila",
+            tiempoEntrega: "20 HAB DÍAS EN CASO DE ESTUDIOS. 2 DÍAS HAB POSTERIOR AL PAGO DE LIQUIDACIÓN EN CASO DE CAPACITACIÓN",
+            pagoIniciar: "50% PARA AGENDAR FECHA, 50% EN ENTREGA DE DOCUMENTOS, CARPETAS.",
+            items: [],
+            discount: 0,
+            discountType: "amount",
+            useIVA: true,
+            quienCotiza: "SHEILA VR",
+            correoCotiza: "compras@tipsmexico.com.mx",
+            id: null
+        };
+
+        let isSaving = false;
+        let isAppInitialized = false;
+
+        // ============================================================
+        // FUNCIONES DE SUPABASE
+        // ============================================================
+
+        async function checkConnection() {
+            const statusEl = document.getElementById('connection-status');
+            try {
+                const { data, error } = await supabaseClient.from('cotizaciones_maquila').select('count', { count: 'exact', head: true });
+                if (error) throw error;
+                statusEl.textContent = '🟢 En línea';
+                statusEl.className = 'status-badge online';
+                return true;
+            } catch (e) {
+                console.warn('Error de conexión:', e.message);
+                statusEl.textContent = '🔴 Sin conexión';
+                statusEl.className = 'status-badge offline';
+                return false;
+            }
+        }
+
+        async function saveToSupabase(quoteData) {
+            if (isSaving) return;
+            isSaving = true;
+
+            const saveBtn = document.getElementById('save-btn');
+            const originalText = saveBtn.innerHTML;
+            saveBtn.innerHTML = '⏳ Guardando...';
+            saveBtn.className = 'btn btn-success loading';
+
+            try {
+                const dataToSend = {
+                    folio: quoteData.folio,
+                    date: quoteData.date,
+                    client: quoteData.client,
+                    contact: quoteData.contact,
+                    ubicacion: quoteData.ubicacion,
+                    pricing_type: quoteData.pricingType,
+                    tiempo_entrega: quoteData.tiempoEntrega,
+                    pago_iniciar: quoteData.pagoIniciar,
+                    items: JSON.stringify(quoteData.items),
+                    discount: quoteData.discount,
+                    discount_type: quoteData.discountType,
+                    use_iva: quoteData.useIVA,
+                    quien_cotiza: quoteData.quienCotiza,
+                    correo_cotiza: quoteData.correoCotiza,
+                    updated_at: new Date().toISOString()
+                };
+
+                let result;
+
+                if (quoteData.id) {
+                    result = await supabaseClient
+                        .from('cotizaciones_maquila')
+                        .update(dataToSend)
+                        .eq('id', quoteData.id);
+                } else {
+                    result = await supabaseClient
+                        .from('cotizaciones_maquila')
+                        .insert(dataToSend)
+                        .select();
+                }
+
+                if (result.error) throw result.error;
+
+                if (!quoteData.id && result.data && result.data.length > 0) {
+                    state.id = result.data[0].id;
+                }
+
+                console.log('✅ Guardado en Supabase exitoso');
+                return true;
+
+            } catch (e) {
+                console.error('❌ Error al guardar en Supabase:', e);
+                alert('⚠️ Error al guardar en la nube: ' + e.message + '\n\nLos datos se guardaron localmente.');
+                return false;
+            } finally {
+                isSaving = false;
+                saveBtn.innerHTML = originalText;
+                saveBtn.className = 'btn btn-success';
+            }
+        }
+
+        async function loadFromSupabase() {
+            try {
+                const { data, error } = await supabaseClient
+                    .from('cotizaciones_maquila')
+                    .select('*')
+                    .order('created_at', { ascending: false });
+
+                if (error) throw error;
+
+                const history = data.map(item => ({
+                    id: item.id,
+                    folio: item.folio,
+                    date: item.date,
+                    client: item.client,
+                    contact: item.contact || '',
+                    ubicacion: item.ubicacion || '',
+                    pricingType: item.pricing_type || 'Maquila',
+                    tiempoEntrega: item.tiempo_entrega || '',
+                    pagoIniciar: item.pago_iniciar || '',
+                    items: typeof item.items === 'string' ? JSON.parse(item.items) : item.items,
+                    discount: item.discount || 0,
+                    discountType: item.discount_type || 'amount',
+                    useIVA: item.use_iva !== undefined ? item.use_iva : true,
+                    quienCotiza: item.quien_cotiza || 'SHEILA VR',
+                    correoCotiza: item.correo_cotiza || 'compras@tipsmexico.com.mx'
+                }));
+
+                localStorage.setItem('tips_maquila_history', JSON.stringify(history));
+                return history;
+
+            } catch (e) {
+                console.error('❌ Error al cargar desde Supabase:', e);
+                return JSON.parse(localStorage.getItem('tips_maquila_history') || '[]');
+            }
+        }
+
+        async function deleteFromSupabase(id) {
+            try {
+                const { error } = await supabaseClient
+                    .from('cotizaciones_maquila')
+                    .delete()
+                    .eq('id', id);
+
+                if (error) throw error;
+                console.log('✅ Eliminado de Supabase exitoso');
+                return true;
+
+            } catch (e) {
+                console.error('❌ Error al eliminar de Supabase:', e);
+                alert('⚠️ Error al eliminar de la nube: ' + e.message);
+                return false;
+            }
+        }
+
+        // ============================================================
+        // FUNCIONES DE LOGIN
+        // ============================================================
+
+        // Declaramos doLogin como función global
+        window.doLogin = function() {
+            const user = document.getElementById('login-user').value.trim().toUpperCase();
+            const pass = document.getElementById('login-pass').value.trim().toUpperCase();
+            const errorEl = document.getElementById('login-error-msg');
+            const btn = document.getElementById('login-submit-btn');
+
+            if (user === 'CHILE' && pass === 'REYENO') {
+                btn.textContent = '✔ Acceso correcto...';
+                btn.style.background = 'linear-gradient(135deg,#1a8c4e,#28e07a)';
+                const screen = document.getElementById('login-screen');
+                screen.style.transition = 'opacity 0.6s ease';
+                setTimeout(() => {
+                    screen.style.opacity = '0';
+                    setTimeout(() => {
+                        screen.remove();
+                        // Mostrar la app y inicializar
+                        document.getElementById('main-app').style.display = 'block';
+                        initApp();
+                    }, 650);
+                }, 500);
+            } else {
+                errorEl.innerHTML = '⚠️ Usuario o contraseña incorrectos';
+                const card = document.querySelector('.login-card');
+                card.style.animation = 'none';
+                card.style.transform = 'translateX(-10px)';
+                setTimeout(() => {
+                    card.style.transition = 'transform 0.4s cubic-bezier(0.36,0.07,0.19,0.97)';
+                    card.style.transform = 'translateX(0)';
+                }, 50);
+                setTimeout(() => { errorEl.innerHTML = ''; }, 3500);
+                document.getElementById('login-user').focus();
+            }
+        };
+
+        // ============================================================
+        // INICIALIZACIÓN DE LA APP
+        // ============================================================
+
+        async function initApp() {
+            if (isAppInitialized) return;
+            isAppInitialized = true;
+
+            document.getElementById('current-date').innerText = state.date;
+            initFolio();
+
+            // Cargar categorías
+            window.groupedData = {};
+            if (typeof pricingData !== 'undefined') {
+                pricingData.forEach(item => {
+                    if (!groupedData[item.category]) groupedData[item.category] = [];
+                    groupedData[item.category].push(item);
+                });
+
+                const catSelect = document.getElementById('category-select');
+                Object.keys(groupedData).forEach(cat => {
+                    const opt = document.createElement('option');
+                    opt.value = cat;
+                    opt.textContent = cat === "Mannto" ? "Mantenimiento" : cat;
+                    catSelect.appendChild(opt);
+                });
+                updateNorms();
+            } else {
+                console.warn('pricingData no está definido. Asegúrate de que pricingData.js esté cargado.');
+            }
+
+            // Configurar valores iniciales
+            document.getElementById('quien-cotiza').value = state.quienCotiza;
+            document.getElementById('correo-cotiza').value = state.correoCotiza;
+
+            // Verificar conexión y cargar historial
+            await checkConnection();
+            await loadHistory();
+
+            renderTable();
+        }
+
+        // ============================================================
+        // FUNCIONES DE LA APLICACIÓN
+        // ============================================================
+
+        function initFolio() {
+            let counter = localStorage.getItem('tips_maquila_folio_counter');
+            if (!counter) {
+                counter = 1;
+                localStorage.setItem('tips_maquila_folio_counter', counter);
+            }
+            state.folio = `COT${counter.toString().padStart(5, '0')}`;
+            document.getElementById('folio-input').value = state.folio;
+        }
+
+        function updateFolio(val) {
+            state.folio = val.trim();
+        }
+
+        function updateQuienCotiza(val) {
+            state.quienCotiza = val.trim();
+        }
+
+        function updateCorreoCotiza(val) {
+            state.correoCotiza = val.trim();
+        }
+
+        function selectPredefinedCotiza(val) {
+            const nameInput = document.getElementById('quien-cotiza');
+            const emailInput = document.getElementById('correo-cotiza');
+            if (val === 'Aixa') {
+                state.quienCotiza = "Aixa J. Mora";
+                state.correoCotiza = "proyectos@tipsmexico.com.mx";
+            } else if (val === 'Sheila') {
+                state.quienCotiza = "Ing. Sheila V. Rosas";
+                state.correoCotiza = "sheila.rosas@tipsmexico.com.mx";
+            }
+            nameInput.value = state.quienCotiza;
+            emailInput.value = state.correoCotiza;
+        }
+
+        function updateNorms() {
+            const category = document.getElementById('category-select').value;
+            const normSelect = document.getElementById('norm-select');
+            normSelect.innerHTML = '';
+            if (!category || !window.groupedData[category]) return;
+
+            window.groupedData[category].forEach((item, index) => {
+                const option = document.createElement('option');
+                option.value = index;
+                option.textContent = item.norm || "Servicio sin nombre";
+                normSelect.appendChild(option);
+            });
+        }
+
+        function addItem() {
+            const category = document.getElementById('category-select').value;
+            const normIndex = document.getElementById('norm-select').value;
+
+            if (!category || normIndex === "") {
+                alert("Seleccione categoría y servicio");
+                return;
+            }
+
+            const itemData = window.groupedData[category][normIndex];
+            const subtotal = itemData.priceMaquila || 0;
+
+            state.items.push({
+                category,
+                normIndex,
+                norm: itemData.norm || "Servicio seleccionado",
+                alcance: itemData.alcance || "",
+                qty: 1,
+                subtotal: subtotal
+            });
+
+            renderTable();
+        }
+
+        function addManualItem() {
+            state.items.push({
+                category: "Manual",
+                normIndex: -1,
+                norm: "Servicio personalizado...",
+                alcance: "Descripción...",
+                qty: 1,
+                subtotal: 0
+            });
+            renderTable();
+        }
+
+        function renderTable() {
+            const body = document.getElementById('quote-body');
+            body.innerHTML = '';
+
+            state.items.forEach((item, index) => {
+                body.innerHTML += `
+                <tr>
+                    <td>
+                        <textarea style="width: 100%; min-height: 80px; font-weight: bold; padding: 5px; border: 1px solid transparent; resize: vertical; font-size: 0.9rem; background: transparent;"
+                               onchange="updateItemNorm(${index}, this.value)"
+                               onfocus="this.style.border='1px solid #00c2ff';"
+                               onblur="this.style.border='1px solid transparent';">${(item.norm || '').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</textarea>
+                    </td>
+                    <td>
+                        <textarea style="width: 100%; min-height: 80px; padding: 5px; border: 1px solid transparent; resize: vertical; font-size: 0.85rem; background: transparent;"
+                               onchange="updateItemAlcance(${index}, this.value)"
+                               onfocus="this.style.border='1px solid #00c2ff';"
+                               onblur="this.style.border='1px solid transparent';">${(item.alcance || '').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</textarea>
+                    </td>
+                    <td style="text-align: center; vertical-align: middle;">
+                        <input type="number" value="${item.qty || 1}" min="1"
+                               style="text-align: center; width: 60px; border: 1px solid transparent; font-size: 1rem; font-weight: bold;"
+                               onchange="updateItemQty(${index}, this.value)"
+                               onfocus="this.style.border='1px solid #00c2ff';"
+                               onblur="this.style.border='1px solid transparent';">
+                    </td>
+                    <td style="text-align: right; vertical-align: middle;">
+                        <input type="number" value="${item.subtotal || 0}" 
+                               style="text-align: right; width: 100px; border: 1px solid transparent; font-size: 1rem; font-weight: bold;"
+                               onchange="updateItemSubtotal(${index}, this.value)"
+                               onfocus="this.style.border='1px solid #00c2ff';"
+                               onblur="this.style.border='1px solid transparent';">
+                    </td>
+                    <td class="remove-btn" style="vertical-align: middle;" onclick="removeItem(${index})">✕</td>
+                </tr>
+            `;
+            });
+
+            document.getElementById('global-discount').value = state.discount || 0;
+            document.getElementById('iva-toggle').checked = state.useIVA !== false;
+
+            updateTotals();
+        }
+
+        function updateItemAlcance(index, val) {
+            state.items[index].alcance = val;
+        }
+
+        function updateItemQty(index, val) {
+            state.items[index].qty = parseInt(val) || 1;
+            updateTotals();
+        }
+
+        function updateItemSubtotal(index, val) {
+            state.items[index].subtotal = parseFloat(val) || 0;
+            updateTotals();
+        }
+
+        function updateDiscountType() {
+            state.discountType = document.getElementById('discount-type').value;
+            updateTotals();
+        }
+
+        function updateItemNorm(index, val) {
+            state.items[index].norm = val;
+        }
+
+        function updateTotals() {
+            state.discount = parseFloat(document.getElementById('global-discount').value) || 0;
+            state.discountType = document.getElementById('discount-type').value;
+            state.useIVA = document.getElementById('iva-toggle').checked;
+
+            let subtotalServices = state.items.reduce((sum, item) => sum + (item.subtotal || 0), 0);
+
+            let discountValue = state.discountType === 'percent'
+                ? (subtotalServices * (state.discount / 100))
+                : state.discount;
+
+            let discountedSubtotal = subtotalServices - discountValue;
+            if (discountedSubtotal < 0) discountedSubtotal = 0;
+
+            let iva = state.useIVA ? (discountedSubtotal * 0.16) : 0;
+            let total = discountedSubtotal + iva;
+
+            document.getElementById('subtotal-raw').innerText = formatCurrency(subtotalServices);
+            document.getElementById('iva-amount').innerText = formatCurrency(iva);
+            document.getElementById('total-general').innerText = formatCurrency(total);
+        }
+
+        function removeItem(index) {
+            state.items.splice(index, 1);
+            renderTable();
+        }
+
+        function formatCurrency(v) {
+            return new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(v);
+        }
+
+        function resetQuote() {
+            if (state.items.length > 0 && !confirm("¿Nueva cotización? Se perderán los cambios no guardados.")) return;
+
+            state.discount = 0;
+            state.discountType = "amount";
+            state.useIVA = true;
+            state.ubicacion = "";
+            state.tiempoEntrega = "20 HAB DÍAS EN CASO DE ESTUDIOS. 2 DÍAS HAB POSTERIOR AL PAGO DE LIQUIDACIÓN EN CASO DE CAPACITACIÓN";
+            state.pagoIniciar = "50% PARA AGENDAR FECHA, 50% EN ENTREGA DE DOCUMENTOS, CARPETAS.";
+            state.quienCotiza = "SHEILA VR";
+            state.correoCotiza = "compras@tipsmexico.com.mx";
+            state.id = null;
+            state.items = [];
+
+            document.getElementById('client-company').value = "";
+            document.getElementById('client-contact').value = "";
+            document.getElementById('ubicacion-proyecto').value = "";
+            document.getElementById('tiempo-entrega').value = state.tiempoEntrega;
+            document.getElementById('pago-iniciar').value = state.pagoIniciar;
+            document.getElementById('global-discount').value = 0;
+            document.getElementById('discount-type').value = "amount";
+            document.getElementById('iva-toggle').checked = true;
+            document.getElementById('quien-cotiza').value = state.quienCotiza;
+            document.getElementById('correo-cotiza').value = state.correoCotiza;
+            document.getElementById('select-predefined-cotiza').value = "";
+
+            initFolio();
+            renderTable();
+        }
+
+        // ============================================================
+        // HISTORIAL
+        // ============================================================
+
+        async function saveToBank() {
+            state.client = document.getElementById('client-company').value;
+            state.contact = document.getElementById('client-contact').value;
+            state.ubicacion = document.getElementById('ubicacion-proyecto').value.trim();
+            state.tiempoEntrega = document.getElementById('tiempo-entrega').value;
+            state.pagoIniciar = document.getElementById('pago-iniciar').value;
+            state.discount = parseFloat(document.getElementById('global-discount').value) || 0;
+            state.discountType = document.getElementById('discount-type').value;
+            state.useIVA = document.getElementById('iva-toggle').checked;
+            state.quienCotiza = document.getElementById('quien-cotiza').value.trim();
+            state.correoCotiza = document.getElementById('correo-cotiza').value.trim();
+
+            if (!state.client) {
+                alert("Ingrese el nombre de la empresa cliente");
+                return;
+            }
+
+            if (state.items.length === 0) {
+                alert("Agregue al menos un servicio");
+                return;
+            }
+
+            const isNew = !state.id;
+
+            const success = await saveToSupabase(state);
+
+            if (success) {
+                if (isNew) {
+                    let counter = parseInt(localStorage.getItem('tips_maquila_folio_counter')) || 1;
+                    localStorage.setItem('tips_maquila_folio_counter', counter + 1);
+                }
+                await loadHistory();
+                alert("✅ Cotización guardada en la nube exitosamente");
+            } else {
+                let history = JSON.parse(localStorage.getItem('tips_maquila_history') || '[]');
+                const existingIdx = history.findIndex(h => h.folio === state.folio);
+                if (existingIdx >= 0) {
+                    history[existingIdx] = JSON.parse(JSON.stringify(state));
+                } else {
+                    history.unshift(JSON.parse(JSON.stringify(state)));
+                }
+                localStorage.setItem('tips_maquila_history', JSON.stringify(history));
+                loadHistory();
+            }
+        }
+
+        async function loadHistory() {
+            const list = document.getElementById('history-list');
+            list.innerHTML = '<p style="text-align:center; color:#999; margin-top:20px;">Cargando...</p>';
+
+            const history = await loadFromSupabase();
+
+            list.innerHTML = '';
+
+            if (history.length === 0) {
+                list.innerHTML = '<p style="text-align:center; color:#999; margin-top:20px;">No hay cotizaciones guardadas</p>';
+                return;
+            }
+
+            history.forEach((h) => {
+                const item = document.createElement('div');
+                item.className = 'history-item';
+
+                const itemId = h.id;
+
+                item.onclick = () => loadQuote(itemId);
+
+                let subtotal = h.items.reduce((sum, i) => sum + (i.subtotal || 0), 0);
+                let discountValue = h.discountType === 'percent'
+                    ? (subtotal * ((h.discount || 0) / 100))
+                    : (h.discount || 0);
+                let total = (subtotal - discountValue);
+                if (h.useIVA !== false) total *= 1.16;
+
+                const dateStr = h.date || 'Fecha no disponible';
+
+                item.innerHTML = `
+                    <span class="delete-hist" onclick="event.stopPropagation(); deleteHistory('${itemId}')">🗑️</span>
+                    <h4>${h.folio} - ${h.client}</h4>
+                    <p>👤 ${h.contact || 'N/A'}</p>
+                    <p>📅 ${dateStr} | 💰 ${formatCurrency(total)}</p>
+                `;
+                list.appendChild(item);
+            });
+        }
+
+        async function loadQuote(id) {
+            const history = await loadFromSupabase();
+            const q = history.find(h => h.id === id);
+
+            if (!q) {
+                alert('No se encontró la cotización');
+                return;
+            }
+
+            state = JSON.parse(JSON.stringify(q));
+            state.id = q.id;
+            state.quienCotiza = state.quienCotiza || "SHEILA VR";
+            state.correoCotiza = state.correoCotiza || "compras@tipsmexico.com.mx";
+            state.ubicacion = state.ubicacion || "";
+            state.tiempoEntrega = state.tiempoEntrega || "20 HAB DÍAS EN CASO DE ESTUDIOS. 2 DÍAS HAB POSTERIOR AL PAGO DE LIQUIDACIÓN EN CASO DE CAPACITACIÓN";
+            state.pagoIniciar = state.pagoIniciar || "50% PARA AGENDAR FECHA, 50% EN ENTREGA DE DOCUMENTOS, CARPETAS.";
+            state.discount = state.discount || 0;
+            state.discountType = state.discountType || "amount";
+            state.useIVA = state.useIVA !== undefined ? state.useIVA : true;
+
+            document.getElementById('client-company').value = state.client;
+            document.getElementById('client-contact').value = state.contact;
+            document.getElementById('ubicacion-proyecto').value = state.ubicacion;
+            document.getElementById('tiempo-entrega').value = state.tiempoEntrega;
+            document.getElementById('pago-iniciar').value = state.pagoIniciar;
+            document.getElementById('folio-input').value = state.folio;
+            document.getElementById('global-discount').value = state.discount;
+            document.getElementById('discount-type').value = state.discountType;
+            document.getElementById('iva-toggle').checked = state.useIVA;
+            document.getElementById('quien-cotiza').value = state.quienCotiza;
+            document.getElementById('correo-cotiza').value = state.correoCotiza;
+            document.getElementById('select-predefined-cotiza').value = "";
+
+            renderTable();
+            toggleHistory();
+        }
+
+        async function deleteHistory(id) {
+            if (!confirm("¿Eliminar esta cotización del banco?")) return;
+
+            const deleted = await deleteFromSupabase(id);
+
+            let history = JSON.parse(localStorage.getItem('tips_maquila_history') || '[]');
+            history = history.filter(h => h.id !== id);
+            localStorage.setItem('tips_maquila_history', JSON.stringify(history));
+
+            await loadHistory();
+        }
+
+        async function syncFromCloud() {
+            const btn = document.getElementById('sync-btn');
+            btn.innerHTML = '⏳ Sincronizando...';
+            btn.className = 'btn btn-sync loading';
+
+            try {
+                await loadHistory();
+                const statusEl = document.getElementById('connection-status');
+                statusEl.textContent = '🟢 Sincronizado';
+                statusEl.className = 'status-badge online';
+                alert('✅ Datos sincronizados con la nube');
+            } catch (e) {
+                alert('⚠️ Error al sincronizar: ' + e.message);
+            } finally {
+                btn.innerHTML = '🔄 Sincronizar';
+                btn.className = 'btn btn-sync';
+            }
+        }
+
+        function toggleHistory() {
+            const panel = document.getElementById('history-panel');
+            const overlay = document.getElementById('overlay');
+            panel.classList.toggle('open');
+            overlay.classList.toggle('visible');
+        }
+
+        // ============================================================
+        // EXCEL Y PDF
+        // ============================================================
+
+        function exportToExcel() {
+            if (state.items.length === 0) return alert("Agregue servicios primero");
+
+            const rows = state.items.map(item => ({
+                'Folio': state.folio,
+                'Empresa': state.client,
+                'Ubicación': state.ubicacion,
+                'Categoría': item.category === "Mannto" ? "Mantenimiento" : item.category,
+                'Servicio': item.norm,
+                'Alcance': item.alcance,
+                'Cantidad': item.qty,
+                'Subtotal Item': item.subtotal
+            }));
+
+            let subtotalServices = state.items.reduce((sum, item) => sum + (item.subtotal || 0), 0);
+            let discountValue = state.discountType === 'percent'
+                ? (subtotalServices * ((state.discount || 0) / 100))
+                : (state.discount || 0);
+            let discounted = subtotalServices - discountValue;
+            let iva = state.useIVA ? discounted * 0.16 : 0;
+
+            rows.push({});
+            rows.push({ 'Servicio': 'SUBTOTAL', 'Subtotal Item': subtotalServices });
+            rows.push({ 'Servicio': 'DESCUENTO' + (state.discountType === 'percent' ? ` (${state.discount}%)` : ''), 'Subtotal Item': discountValue });
+            rows.push({ 'Servicio': 'IVA (16%)', 'Subtotal Item': iva });
+            rows.push({ 'Servicio': 'TOTAL', 'Subtotal Item': discounted + iva });
+
+            const ws = XLSX.utils.json_to_sheet(rows);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Cotización");
+            XLSX.writeFile(wb, `Cotizacion_Maquila_${state.folio}.xlsx`);
+        }
+
+        function generatePDF() {
+            if (state.items.length === 0) return alert("Agregue servicios primero");
+            
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF('p', 'pt', 'letter');
+            
+            state.contact = document.getElementById('client-contact').value;
+            state.client = document.getElementById('client-company').value;
+            state.folio = document.getElementById('folio-input').value.trim();
+            state.ubicacion = document.getElementById('ubicacion-proyecto').value.trim();
+            state.tiempoEntrega = document.getElementById('tiempo-entrega').value;
+            state.pagoIniciar = document.getElementById('pago-iniciar').value;
+            state.quienCotiza = document.getElementById('quien-cotiza').value.trim();
+            state.correoCotiza = document.getElementById('correo-cotiza').value.trim();
+            
+            doc.autoTable({
+                startY: 100,
+                body: [
+                    ['Folio:', state.folio, 'Fecha:', state.date],
+                    [{ content: 'DATOS DEL CLIENTE', colSpan: 4, styles: { fontStyle: 'bold', halign: 'center', fillColor: [31, 56, 100], textColor: [255, 255, 255] } }],
+                    [{ content: 'Razón Social:', styles: { fontStyle: 'bold', fillColor: [213, 220, 228] } }, { content: state.client || "", colSpan: 3 }],
+                    [{ content: 'Atención a:', styles: { fontStyle: 'bold', fillColor: [213, 220, 228] } }, { content: state.contact || "", colSpan: 3 }]
+                ],
+                theme: 'grid',
+                styles: { font: 'helvetica', fontSize: 10, cellPadding: 5, textColor: [0, 0, 0], lineColor: [0, 0, 0], lineWidth: 0.5 },
+                columnStyles: { 
+                    0: { fontStyle: 'bold', fillColor: [213, 220, 228], cellWidth: 80, halign: 'right' }, 
+                    1: { cellWidth: 160 }, 
+                    2: { fontStyle: 'bold', fillColor: [213, 220, 228], cellWidth: 80, halign: 'right' }, 
+                    3: { cellWidth: 210 } 
+                }
+            });
+            
+            let partidaIndex = 1;
+            let table3Data = state.items.map((item) => {
+                const row = [
+                    partidaIndex.toString(),
+                    item.norm || '',
+                    item.alcance || '',
+                    formatCurrency(item.subtotal || 0)
+                ];
+                partidaIndex++;
+                return row;
+            });
+            
+            let subtotalServices = state.items.reduce((sum, item) => sum + (item.subtotal || 0), 0);
+            let discountValue = state.discountType === 'percent' ? (subtotalServices * ((state.discount || 0) / 100)) : (state.discount || 0);
+            let subtotalNeto = subtotalServices - discountValue;
+            let iva = state.useIVA ? (subtotalNeto * 0.16) : 0;
+            let total = subtotalNeto + iva;
+            
+            const legalText = "Los pagos de derechos corren por cuenta del cliente. Cualquier observación realizada y solicitada por parte de la autoridad es responsabilidad del cliente, se deberá de proporcionar la evidencia para su contestación. Esta cotización ampara los tramites descritos en esta cotización, cualquier otro tramite no descrito será motivo de otra cotización.";
+
+            table3Data.push([
+                { content: legalText, rowSpan: 3, colSpan: 2, styles: { fontSize: 7, fontStyle: 'italic', halign: 'justify', lineWidth: 0, fillColor: [255, 255, 255] } }, 
+                { content: 'Subtotal', styles: { fontStyle: 'bold', halign: 'right' } }, 
+                { content: formatCurrency(subtotalNeto), styles: { halign: 'right' } }
+            ]);
+            table3Data.push([
+                { content: 'IVA', styles: { fontStyle: 'bold', halign: 'right' } }, 
+                { content: formatCurrency(iva), styles: { halign: 'right' } }
+            ]);
+            table3Data.push([
+                { content: 'TOTAL', styles: { fontStyle: 'bold', halign: 'right', fillColor: [31, 56, 100], textColor: [255, 255, 255] } }, 
+                { content: formatCurrency(total), styles: { fontStyle: 'bold', halign: 'right', fillColor: [31, 56, 100], textColor: [255, 255, 255] } }
+            ]);
+
+            doc.autoTable({
+                startY: doc.lastAutoTable.finalY + 15,
+                head: [['PART.', 'Descripción del concepto / servicio', 'Alcances', 'Importe']],
+                body: table3Data,
+                theme: 'grid',
+                headStyles: { fillColor: [31, 56, 100], textColor: [255, 255, 255], fontStyle: 'bold', lineColor: [0, 0, 0], lineWidth: 0.5 },
+                styles: { font: 'helvetica', fontSize: 8, cellPadding: 5, textColor: [0, 0, 0], lineColor: [0, 0, 0], lineWidth: 0.5 },
+                columnStyles: {
+                    0: { cellWidth: 40, halign: 'center' },
+                    1: { cellWidth: 160 },
+                    2: { cellWidth: 240 },
+                    3: { cellWidth: 90, halign: 'right' }
+                }
+            });
+            
+            doc.autoTable({
+                startY: doc.lastAutoTable.finalY + 15,
+                body: [
+                    [{ content: 'CONDICIONES COMERCIALES', colSpan: 2, styles: { fontStyle: 'bold', halign: 'center', fillColor: [31, 56, 100], textColor: [255, 255, 255] } }],
+                    ['Forma de pago:', state.pagoIniciar || "50% PARA AGENDAR FECHA, 50% EN ENTREGA DE DOCUMENTOS, CARPETAS."],
+                    ['Vigencia de la cotización:', '1 MES'],
+                    ['Tiempo de entrega / ejecución:', state.tiempoEntrega || "20 HAB DÍAS EN CASO DE ESTUDIOS. Y LOS TRÁMITES DE CULMINAN AL INGRESO A LA SECRETARIA CORRESPONDIENTE. LOS TRAMITES QUE ENTREN EN URGENTE AUMENTAN UN 20% PARA ENTREGA DE MENOS DE 15 DÍAS"],
+                    ['Lugar de prestación del servicio:', state.ubicacion || "MÉRIDA, YUCATÁN"],
+                    ['Observaciones:', '']
+                ],
+                theme: 'grid',
+                styles: { font: 'helvetica', fontSize: 9, cellPadding: 5, textColor: [0, 0, 0], lineColor: [0, 0, 0], lineWidth: 0.5 },
+                columnStyles: { 0: { fontStyle: 'bold', cellWidth: 160, fillColor: [213, 220, 228] } }
+            });
+            
+            let finalY = doc.lastAutoTable.finalY + 30;
+            const checkPageBreak = (neededSpace) => {
+                if (finalY + neededSpace > 700) {
+                    doc.addPage();
+                    finalY = 100;
+                }
+            };
+            
+            checkPageBreak(150);
+            
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(9);
+            doc.text("COMPROMISO DE REPRESENTACIÓN Y RESGUARDO DE IDENTIDAD EMPRESARIAL (WHITE-LABEL)", 40, finalY);
+            finalY += 15;
+            doc.setFont("helvetica", "normal");
+            doc.setFontSize(8);
+            
+            const introText = "La presente cotización firmada indica que TIPS es contratado por una empresa consultora, despacho o firma intermediaria para ejecutar trabajos que serán presentados ante el cliente final bajo la marca, identidad y representación de dicha empresa contratante, asumimos los siguientes compromisos:";
+            const pt1 = "1. No captación ni contacto comercial directo. TIPS se compromete a no recabar, almacenar, gestionar ni utilizar datos personales, fiscales o de contacto del cliente final con fines comerciales propios. No estableceremos comunicación por canales paralelos, no ofreceremos servicios adicionales por cuenta propia, ni mantendremos relación posventa al margen de la empresa contratante.";
+            const pt2 = "2. Representación como extensión de su equipo. Durante la prestación del servicio nos presentaremos, identificaremos y conduciremos como personal integrante de la empresa contratante, respetando su identidad corporativa, valores y forma de operar frente al cliente final, siempre que la empresa contratante nos provea oportunamente de los siguientes insumos: Credenciales, gafetes o cartas de presentación a su nombre. Equipo de protección personal (EPP) con su logotipo o identidad. Uniforme, chaleco o vestimenta corporativa, cuando aplique. Plantillas, formatos, machotes y documentación oficial de la empresa. Logotipos en alta resolución, manual de marca o lineamientos visuales. Cualquier otro insumo necesario para preservar su imagen corporativa.";
+            const pt3 = "3. Alcance de los entregables. Nuestros servicios contemplan únicamente la ejecución técnica contratada (evaluaciones, dictámenes, capacitaciones, asesorías, levantamientos, informes técnicos y demás actividades especificadas en la cotización). No se incluyen dentro de este alcance: Diseño de presentaciones, diapositivas o material visual. Material impreso, trípticos, carteles, manuales de difusión. Diseño gráfico, edición de video o piezas de comunicación. Cualquier producto cuya naturaleza sea de difusión, mercadotecnia o imagen. En caso de que la empresa contratante requiera que el servicio se acompañe de materiales de este tipo bajo su identidad, deberá proporcionarlos directamente o contratarlos por separado, ya sea con TIPS como servicio adicional cotizable o con un tercero de su elección.";
+            const pt4 = "4. Confidencialidad recíproca. Toda la información, documentación, hallazgos y resultados generados durante el servicio son propiedad de la empresa contratante y serán entregados exclusivamente a ella, salvo instrucción expresa en contrario. TIPS mantendrá la confidencialidad correspondiente conforme a las disposiciones del aviso de privacidad incluido en esta cotización.";
+            
+            const renderTextBlock = (text) => {
+                const lines = doc.splitTextToSize(text, 530);
+                checkPageBreak(lines.length * 10 + 10);
+                doc.text(lines, 40, finalY);
+                finalY += (lines.length * 10) + 5;
+            };
+
+            renderTextBlock(introText);
+            renderTextBlock(pt1);
+            renderTextBlock(pt2);
+            renderTextBlock(pt3);
+            renderTextBlock(pt4);
+            
+            checkPageBreak(100);
+            
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(9);
+            doc.text("FIRMA DE AUTORIZACIÓN Y ACEPTACIÓN", 40, finalY);
+            finalY += 15;
+            doc.setFont("helvetica", "normal");
+            doc.text("Por medio de la presente, el cliente acepta los términos, condiciones comerciales y el aviso de privacidad descritos en este documento.", 40, finalY);
+            
+            finalY += 30;
+            
+            let elaboro = (state.quienCotiza || "SHEILA VR") + "\nELABORÓ / TIPS MAQUILA\nNombre: __________________________\nPuesto: ___________________________\nFecha: ____________________________";
+            let autoriza = "AUTORIZA / CLIENTE\nNombre: __________________________\nPuesto: ___________________________\nFecha: ____________________________";
+            
+            doc.autoTable({
+                startY: finalY,
+                body: [
+                    [{ content: elaboro, styles: { halign: 'center', cellPadding: 15 } }, { content: autoriza, styles: { halign: 'center', cellPadding: 15 } }]
+                ],
+                theme: 'grid',
+                styles: { fontSize: 9, textColor: [0, 0, 0], lineColor: [0, 0, 0], lineWidth: 0.5 }
+            });
+            
+            const pageCount = doc.internal.getNumberOfPages();
+            for (let i = 1; i <= pageCount; i++) {
+                doc.setPage(i);
+                
+                doc.setFont("helvetica", "bold");
+                doc.setFontSize(28);
+                doc.setTextColor(31, 56, 100);
+                doc.text("TIPS MAQUILA", 306, 50, { align: "center" });
+
+                doc.setFontSize(11);
+                doc.setTextColor(192, 0, 0);
+                doc.text("C O T I Z A C I Ó N", 306, 68, { align: "center" });
+
+                doc.setDrawColor(192, 0, 0);
+                doc.setLineWidth(1.5);
+                doc.line(40, 75, 572, 75);
+
+                doc.setDrawColor(31, 56, 100);
+                doc.setLineWidth(1.0);
+                doc.line(40, 740, 572, 740);
+
+                doc.setFont("helvetica", "bold");
+                doc.setFontSize(9);
+                doc.setTextColor(31, 56, 100);
+                doc.text("Tel. 56 6409 7173   |   compras@tipsmexico.com.mx", 306, 755, { align: "center" });
+
+                doc.setFont("helvetica", "normal");
+                doc.setFontSize(8);
+                doc.setTextColor(89, 89, 89);
+                doc.text(`Página ${i} de ${pageCount}`, 306, 770, { align: "center" });
+            }
+            
+            let clientNameStr = document.getElementById('client-company').value.trim() || 'Cliente';
+            doc.save(`${state.folio}_${clientNameStr}.pdf`);
+        }
+    </script>
+</body>
+
+</html>

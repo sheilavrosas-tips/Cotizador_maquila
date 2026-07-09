@@ -709,25 +709,20 @@
         </footer>
     </div>
 
+          
     <!-- ============================================================
-    PRICING DATA
+    PRICING DATA (cargado desde archivo externo)
     ============================================================ -->
-    <script>
-        const pricingData = [
-            { category: "Seguridad", norm: "NOM-011-STPS-2001", alcance: "INCLUYE: Medición de NER-NSCE", priceMaquila: 6500 },
-            { category: "Seguridad", norm: "NOM-025-STPS-2008", alcance: "INCLUYE: Reconocimiento inicial", priceMaquila: 5600 },
-            { category: "Gastos", norm: "Viáticos", alcance: "Servicios de traslado", priceMaquila: 3000 },
-            { category: "Seguridad", norm: "NOM-004-STPS-1999", alcance: "Sistemas de protección y dispositivos de seguridad", priceMaquila: 7200 },
-            { category: "Seguridad", norm: "NOM-009-STPS-2011", alcance: "Condiciones de seguridad para trabajo en alturas", priceMaquila: 8500 },
-            { category: "Capacitación", norm: "Capacitación Básica", alcance: "Curso de 8 horas", priceMaquila: 12000 }
-        ];
+    <script src="pricingData.js"></script>
     </script>
 
     <!-- ============================================================
     CÓDIGO PRINCIPAL
     ============================================================ -->
     <script>
-        // ============================================================
+        // ======================================================
+
+======
         // CONFIGURACIÓN DE SUPABASE - ¡CORREGIDO!
         // ============================================================
         // ⚠️ IMPORTANTE: La URL NO debe tener /rest/v1/

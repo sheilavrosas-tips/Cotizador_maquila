@@ -710,9 +710,36 @@
     </div>
 
     <!-- ============================================================
-    PRICING DATA - CARGADO DESDE ARCHIVO EXTERNO
+    PRICING DATA - INCLUIDO AQUÍ (NO NECESITA ARCHIVO EXTERNO)
     ============================================================ -->
-    <script src="pricingData.js"></script>
+    <script>
+        // ============================================================
+        // CATÁLOGO DE SERVICIOS - MODIFICA AQUÍ TUS SERVICIOS
+        // ============================================================
+        const pricingData = [
+            // SEGURIDAD
+            { category: "Seguridad", norm: "NOM-011-STPS-2001", alcance: "INCLUYE: Medición de NER-NSCE", priceMaquila: 6500 },
+            { category: "Seguridad", norm: "NOM-025-STPS-2008", alcance: "INCLUYE: Reconocimiento inicial", priceMaquila: 5600 },
+            { category: "Seguridad", norm: "NOM-004-STPS-1999", alcance: "Sistemas de protección y dispositivos", priceMaquila: 7200 },
+            { category: "Seguridad", norm: "NOM-009-STPS-2011", alcance: "Trabajo en alturas", priceMaquila: 8500 },
+            { category: "Seguridad", norm: "NOM-017-STPS-2008", alcance: "Equipo de protección personal", priceMaquila: 4800 },
+            { category: "Seguridad", norm: "NOM-019-STPS-2011", alcance: "Constitución y funcionamiento de comisiones", priceMaquila: 9200 },
+            // GASTOS
+            { category: "Gastos", norm: "Viáticos", alcance: "Servicios de traslado", priceMaquila: 3000 },
+            { category: "Gastos", norm: "Alimentación", alcance: "Gastos de comida", priceMaquila: 1500 },
+            // CAPACITACIÓN
+            { category: "Capacitación", norm: "Capacitación Básica", alcance: "Curso de 8 horas", priceMaquila: 12000 },
+            { category: "Capacitación", norm: "Capacitación Avanzada", alcance: "Curso de 16 horas", priceMaquila: 18000 },
+            { category: "Capacitación", norm: "Curso NOM-030", alcance: "Capacitación en NOM-030-STPS-2009", priceMaquila: 15000 },
+            // ESTUDIOS
+            { category: "Estudios", norm: "Estudio de Riesgo", alcance: "Análisis de riesgos", priceMaquila: 25000 },
+            { category: "Estudios", norm: "Dictamen Pericial", alcance: "Elaboración de dictamen", priceMaquila: 32000 },
+            // CUSTOM (Puedes agregar más categorías)
+            { category: "Otros", norm: "Servicio Personalizado", alcance: "Cotización a la medida", priceMaquila: 0 }
+        ];
+        
+        console.log('✅ pricingData cargado correctamente. Total servicios:', pricingData.length);
+    </script>
 
     <!-- ============================================================
     CÓDIGO PRINCIPAL
@@ -885,7 +912,7 @@
         }
 
         // ============================================================
-        // LOGIN
+        // LOGIN - CORREGIDO
         // ============================================================
 
         window.doLogin = function() {
@@ -904,7 +931,8 @@
                     setTimeout(() => {
                         screen.remove();
                         document.getElementById('main-app').style.display = 'block';
-                        initApp();
+                        // Inicializar la app DESPUÉS de mostrar el contenido
+                        setTimeout(() => initApp(), 100);
                     }, 650);
                 }, 500);
             } else {
@@ -921,15 +949,17 @@
             if (isAppInitialized) return;
             isAppInitialized = true;
 
+            console.log('🚀 Inicializando app...');
+            
             document.getElementById('current-date').innerText = state.date;
             initFolio();
 
-            // Cargar categorías desde pricingData
+            // Cargar categorías desde pricingData (que ya está en el HTML)
             window.groupedData = {};
             
-            // Verificar si pricingData existe (cargado desde el archivo externo)
+            // Verificar que pricingData existe
             if (typeof pricingData !== 'undefined' && Array.isArray(pricingData) && pricingData.length > 0) {
-                console.log('✅ pricingData cargado correctamente. Total servicios:', pricingData.length);
+                console.log('✅ pricingData cargado. Total servicios:', pricingData.length);
                 
                 pricingData.forEach(item => {
                     if (!window.groupedData[item.category]) window.groupedData[item.category] = [];
@@ -945,9 +975,11 @@
                     catSelect.appendChild(opt);
                 });
                 updateNorms();
+                console.log('✅ Categorías cargadas:', Object.keys(window.groupedData));
             } else {
-                console.warn('⚠️ pricingData no está definido o está vacío. Verifica que el archivo pricingData.js exista.');
-                alert('⚠️ No se encontró el archivo pricingData.js. Asegúrate de que esté en la misma carpeta.');
+                console.error('❌ ERROR: pricingData no está definido o está vacío');
+                alert('⚠️ Error: No se encontraron los servicios. Contacta al administrador.');
+                return;
             }
 
             document.getElementById('quien-cotiza').value = state.quienCotiza;
@@ -958,6 +990,8 @@
             await checkConnection();
             await loadHistory();
             renderTable();
+            
+            console.log('✅ App inicializada correctamente');
         }
 
         // ============================================================

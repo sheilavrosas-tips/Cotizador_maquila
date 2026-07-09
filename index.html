@@ -151,16 +151,6 @@
             background: white;
         }
 
-        select {
-            text-overflow: ellipsis;
-            white-space: nowrap;
-            overflow: hidden;
-        }
-        
-        select option {
-            white-space: normal;
-        }
-
         select:focus,
         input:focus {
             border-color: var(--secondary);
@@ -412,17 +402,6 @@
         .status-badge.offline {
             background: #f8d7da;
             color: #721c24;
-        }
-
-        .status-badge.saving {
-            background: #fff3cd;
-            color: #856404;
-            animation: pulse 1s infinite;
-        }
-
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
         }
 
         /* ===== LOGIN SCREEN ===== */
@@ -677,7 +656,7 @@
         <div class="login-card">
             <div class="login-logo-ring">🏭</div>
             <h1 class="login-title">TIPS Maquila</h1>
-            <p class="login-subtitle">Cotizador de Servicios &nbsp;·&nbsp; Versión 08</p>
+            <p class="login-subtitle">Cotizador de Servicios &nbsp;·&nbsp; Versión 09</p>
 
             <div class="login-field">
                 <label for="login-user">Usuario</label>
@@ -703,7 +682,7 @@
             <div class="login-footer">
                 <p><strong>© Propiedad de Sheila Vázquez Rosas</strong></p>
                 <p>TIPS &mdash; Training Industrial Project and Services</p>
-                <p>Versión 08 &nbsp;·&nbsp; Todos los derechos reservados</p>
+                <p>Versión 09 &nbsp;·&nbsp; Todos los derechos reservados</p>
             </div>
         </div>
     </div>
@@ -902,20 +881,51 @@
         </div>
 
         <footer>
-            <p>Software desarrollado para <strong>TIPS</strong> &nbsp;|&nbsp; <strong>Versión 08</strong></p>
+            <p>Software desarrollado para <strong>TIPS</strong> &nbsp;|&nbsp; <strong>Versión 09</strong></p>
             <p style="margin-top:4px;">© Propiedad de <strong>Sheila Vázquez Rosas</strong> &nbsp;·&nbsp; Todos los derechos reservados</p>
         </footer>
     </div>
 
-    <script src="pricingData.js"></script>
+    <!-- ============================================================
+    PRICING DATA - Los datos de los servicios
+    ============================================================ -->
     <script>
         // ============================================================
-        // CONFIGURACIÓN DE SUPABASE
+        // PRICING DATA - ¡VERIFICA QUE TUS SERVICIOS ESTÉN AQUÍ!
+        // ============================================================
+        const pricingData = [
+            // NOM-011-STPS-2001
+            {
+                category: "Seguridad",
+                norm: "NOM-011-STPS-2001",
+                alcance: "INCLUYE: Medición de NER-NSCE",
+                priceMaquila: 6500
+            },
+            // NOM-025-STPS-2008
+            {
+                category: "Seguridad",
+                norm: "NOM-025-STPS-2008",
+                alcance: "INCLUYE: Reconocimiento inicial",
+                priceMaquila: 5600
+            },
+            // Viáticos
+            {
+                category: "Gastos",
+                norm: "Viáticos",
+                alcance: "Servicios de traslado",
+                priceMaquila: 3000
+            }
+        ];
+    </script>
+
+    <script>
+        // ============================================================
+        // CONFIGURACIÓN DE SUPABASE - ¡CORREGIDO!
         // ============================================================
         const SUPABASE_BASE_URL = 'https://jsomwasrfetoqmxhtixg.supabase.co';
         const SUPABASE_ANON_KEY = 'sb_publishable_OfCiwAJyb3X4PiaMimEpXg_ru4QrvAn';
 
-        // Inicializar cliente de Supabase (usando const para evitar redeclaración)
+        // Inicializar cliente de Supabase
         const supabaseClient = window.supabase.createClient(SUPABASE_BASE_URL, SUPABASE_ANON_KEY);
 
         // ============================================================
@@ -928,8 +938,8 @@
             contact: "",
             ubicacion: "",
             pricingType: "Maquila",
-            tiempoEntrega: "20 HAB DÍAS EN CASO DE ESTUDIOS. 2 DÍAS HAB POSTERIOR AL PAGO DE LIQUIDACIÓN EN CASO DE CAPACITACIÓN",
-            pagoIniciar: "50% PARA AGENDAR FECHA, 50% EN ENTREGA DE DOCUMENTOS, CARPETAS.",
+            tiempoEntrega: "35 días hábiles",
+            pagoIniciar: "50% anticipo, 50% al entregar",
             items: [],
             discount: 0,
             discountType: "amount",
@@ -949,7 +959,9 @@
         async function checkConnection() {
             const statusEl = document.getElementById('connection-status');
             try {
-                const { data, error } = await supabaseClient.from('cotizaciones_maquila').select('count', { count: 'exact', head: true });
+                const { data, error } = await supabaseClient
+                    .from('cotizaciones_maquila')
+                    .select('count', { count: 'exact', head: true });
                 if (error) throw error;
                 statusEl.textContent = '🟢 En línea';
                 statusEl.className = 'status-badge online';
@@ -976,28 +988,30 @@
                     folio: quoteData.folio,
                     date: quoteData.date,
                     client: quoteData.client,
-                    contact: quoteData.contact,
-                    ubicacion: quoteData.ubicacion,
-                    pricing_type: quoteData.pricingType,
-                    tiempo_entrega: quoteData.tiempoEntrega,
-                    pago_iniciar: quoteData.pagoIniciar,
-                    items: JSON.stringify(quoteData.items),
-                    discount: quoteData.discount,
-                    discount_type: quoteData.discountType,
-                    use_iva: quoteData.useIVA,
-                    quien_cotiza: quoteData.quienCotiza,
-                    correo_cotiza: quoteData.correoCotiza,
+                    contact: quoteData.contact || '',
+                    ubicacion: quoteData.ubicacion || '',
+                    pricing_type: quoteData.pricingType || 'Maquila',
+                    tiempo_entrega: quoteData.tiempoEntrega || '',
+                    pago_iniciar: quoteData.pagoIniciar || '',
+                    items: JSON.stringify(quoteData.items || []),
+                    discount: parseFloat(quoteData.discount) || 0,
+                    discount_type: quoteData.discountType || 'amount',
+                    use_iva: quoteData.useIVA !== undefined ? quoteData.useIVA : true,
+                    quien_cotiza: quoteData.quienCotiza || '',
+                    correo_cotiza: quoteData.correoCotiza || '',
                     updated_at: new Date().toISOString()
                 };
 
                 let result;
 
                 if (quoteData.id) {
+                    // ACTUALIZAR
                     result = await supabaseClient
                         .from('cotizaciones_maquila')
                         .update(dataToSend)
                         .eq('id', quoteData.id);
                 } else {
+                    // INSERTAR NUEVO
                     result = await supabaseClient
                         .from('cotizaciones_maquila')
                         .insert(dataToSend)
@@ -1006,6 +1020,7 @@
 
                 if (result.error) throw result.error;
 
+                // Si es nuevo, guardar el ID
                 if (!quoteData.id && result.data && result.data.length > 0) {
                     state.id = result.data[0].id;
                 }
@@ -1033,7 +1048,7 @@
 
                 if (error) throw error;
 
-                const history = data.map(item => ({
+                const history = (data || []).map(item => ({
                     id: item.id,
                     folio: item.folio,
                     date: item.date,
@@ -1043,8 +1058,8 @@
                     pricingType: item.pricing_type || 'Maquila',
                     tiempoEntrega: item.tiempo_entrega || '',
                     pagoIniciar: item.pago_iniciar || '',
-                    items: typeof item.items === 'string' ? JSON.parse(item.items) : item.items,
-                    discount: item.discount || 0,
+                    items: typeof item.items === 'string' ? JSON.parse(item.items) : (item.items || []),
+                    discount: parseFloat(item.discount) || 0,
                     discountType: item.discount_type || 'amount',
                     useIVA: item.use_iva !== undefined ? item.use_iva : true,
                     quienCotiza: item.quien_cotiza || 'SHEILA VR',
@@ -1082,7 +1097,6 @@
         // FUNCIONES DE LOGIN
         // ============================================================
 
-        // Declaramos doLogin como función global
         window.doLogin = function() {
             const user = document.getElementById('login-user').value.trim().toUpperCase();
             const pass = document.getElementById('login-pass').value.trim().toUpperCase();
@@ -1098,7 +1112,6 @@
                     screen.style.opacity = '0';
                     setTimeout(() => {
                         screen.remove();
-                        // Mostrar la app y inicializar
                         document.getElementById('main-app').style.display = 'block';
                         initApp();
                     }, 650);
@@ -1130,32 +1143,51 @@
 
             // Cargar categorías
             window.groupedData = {};
-            if (typeof pricingData !== 'undefined') {
+            if (typeof pricingData !== 'undefined' && Array.isArray(pricingData)) {
                 pricingData.forEach(item => {
-                    if (!groupedData[item.category]) groupedData[item.category] = [];
-                    groupedData[item.category].push(item);
+                    if (!window.groupedData[item.category]) window.groupedData[item.category] = [];
+                    window.groupedData[item.category].push(item);
                 });
 
                 const catSelect = document.getElementById('category-select');
-                Object.keys(groupedData).forEach(cat => {
+                Object.keys(window.groupedData).forEach(cat => {
                     const opt = document.createElement('option');
                     opt.value = cat;
-                    opt.textContent = cat === "Mannto" ? "Mantenimiento" : cat;
+                    opt.textContent = cat;
                     catSelect.appendChild(opt);
                 });
                 updateNorms();
             } else {
-                console.warn('pricingData no está definido. Asegúrate de que pricingData.js esté cargado.');
+                console.warn('⚠️ pricingData no está definido. Usando datos de respaldo.');
+                // Datos de respaldo
+                window.groupedData = {
+                    "Seguridad": [
+                        { norm: "NOM-011-STPS-2001", alcance: "Medición de NER-NSCE", priceMaquila: 6500 },
+                        { norm: "NOM-025-STPS-2008", alcance: "Reconocimiento inicial", priceMaquila: 5600 }
+                    ],
+                    "Gastos": [
+                        { norm: "Viáticos", alcance: "Servicios de traslado", priceMaquila: 3000 }
+                    ]
+                };
+                const catSelect = document.getElementById('category-select');
+                Object.keys(window.groupedData).forEach(cat => {
+                    const opt = document.createElement('option');
+                    opt.value = cat;
+                    opt.textContent = cat;
+                    catSelect.appendChild(opt);
+                });
+                updateNorms();
             }
 
             // Configurar valores iniciales
             document.getElementById('quien-cotiza').value = state.quienCotiza;
             document.getElementById('correo-cotiza').value = state.correoCotiza;
+            document.getElementById('tiempo-entrega').value = state.tiempoEntrega;
+            document.getElementById('pago-iniciar').value = state.pagoIniciar;
 
             // Verificar conexión y cargar historial
             await checkConnection();
             await loadHistory();
-
             renderTable();
         }
 
@@ -1226,8 +1258,8 @@
             const subtotal = itemData.priceMaquila || 0;
 
             state.items.push({
-                category,
-                normIndex,
+                category: category,
+                normIndex: parseInt(normIndex),
                 norm: itemData.norm || "Servicio seleccionado",
                 alcance: itemData.alcance || "",
                 qty: 1,
@@ -1254,19 +1286,22 @@
             body.innerHTML = '';
 
             state.items.forEach((item, index) => {
+                const normText = (item.norm || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                const alcanceText = (item.alcance || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                
                 body.innerHTML += `
                 <tr>
                     <td>
                         <textarea style="width: 100%; min-height: 80px; font-weight: bold; padding: 5px; border: 1px solid transparent; resize: vertical; font-size: 0.9rem; background: transparent;"
                                onchange="updateItemNorm(${index}, this.value)"
                                onfocus="this.style.border='1px solid #00c2ff';"
-                               onblur="this.style.border='1px solid transparent';">${(item.norm || '').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</textarea>
+                               onblur="this.style.border='1px solid transparent';">${normText}</textarea>
                     </td>
                     <td>
                         <textarea style="width: 100%; min-height: 80px; padding: 5px; border: 1px solid transparent; resize: vertical; font-size: 0.85rem; background: transparent;"
                                onchange="updateItemAlcance(${index}, this.value)"
                                onfocus="this.style.border='1px solid #00c2ff';"
-                               onblur="this.style.border='1px solid transparent';">${(item.alcance || '').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</textarea>
+                               onblur="this.style.border='1px solid transparent';">${alcanceText}</textarea>
                     </td>
                     <td style="text-align: center; vertical-align: middle;">
                         <input type="number" value="${item.qty || 1}" min="1"
@@ -1282,7 +1317,7 @@
                                onfocus="this.style.border='1px solid #00c2ff';"
                                onblur="this.style.border='1px solid transparent';">
                     </td>
-                    <td class="remove-btn" style="vertical-align: middle;" onclick="removeItem(${index})">✕</td>
+                    <td class="remove-btn" style="vertical-align: middle; text-align: center; cursor: pointer;" onclick="removeItem(${index})">✕</td>
                 </tr>
             `;
             });
@@ -1307,13 +1342,13 @@
             updateTotals();
         }
 
+        function updateItemNorm(index, val) {
+            state.items[index].norm = val;
+        }
+
         function updateDiscountType() {
             state.discountType = document.getElementById('discount-type').value;
             updateTotals();
-        }
-
-        function updateItemNorm(index, val) {
-            state.items[index].norm = val;
         }
 
         function updateTotals() {
@@ -1354,8 +1389,8 @@
             state.discountType = "amount";
             state.useIVA = true;
             state.ubicacion = "";
-            state.tiempoEntrega = "20 HAB DÍAS EN CASO DE ESTUDIOS. 2 DÍAS HAB POSTERIOR AL PAGO DE LIQUIDACIÓN EN CASO DE CAPACITACIÓN";
-            state.pagoIniciar = "50% PARA AGENDAR FECHA, 50% EN ENTREGA DE DOCUMENTOS, CARPETAS.";
+            state.tiempoEntrega = "35 días hábiles";
+            state.pagoIniciar = "50% anticipo, 50% al entregar";
             state.quienCotiza = "SHEILA VR";
             state.correoCotiza = "compras@tipsmexico.com.mx";
             state.id = null;
@@ -1382,8 +1417,8 @@
         // ============================================================
 
         async function saveToBank() {
-            state.client = document.getElementById('client-company').value;
-            state.contact = document.getElementById('client-contact').value;
+            state.client = document.getElementById('client-company').value.trim();
+            state.contact = document.getElementById('client-contact').value.trim();
             state.ubicacion = document.getElementById('ubicacion-proyecto').value.trim();
             state.tiempoEntrega = document.getElementById('tiempo-entrega').value;
             state.pagoIniciar = document.getElementById('pago-iniciar').value;
@@ -1415,6 +1450,7 @@
                 await loadHistory();
                 alert("✅ Cotización guardada en la nube exitosamente");
             } else {
+                // Guardar localmente como respaldo
                 let history = JSON.parse(localStorage.getItem('tips_maquila_history') || '[]');
                 const existingIdx = history.findIndex(h => h.folio === state.folio);
                 if (existingIdx >= 0) {
@@ -1435,7 +1471,7 @@
 
             list.innerHTML = '';
 
-            if (history.length === 0) {
+            if (!history || history.length === 0) {
                 list.innerHTML = '<p style="text-align:center; color:#999; margin-top:20px;">No hay cotizaciones guardadas</p>';
                 return;
             }
@@ -1448,7 +1484,7 @@
 
                 item.onclick = () => loadQuote(itemId);
 
-                let subtotal = h.items.reduce((sum, i) => sum + (i.subtotal || 0), 0);
+                let subtotal = (h.items || []).reduce((sum, i) => sum + (i.subtotal || 0), 0);
                 let discountValue = h.discountType === 'percent'
                     ? (subtotal * ((h.discount || 0) / 100))
                     : (h.discount || 0);
@@ -1459,7 +1495,7 @@
 
                 item.innerHTML = `
                     <span class="delete-hist" onclick="event.stopPropagation(); deleteHistory('${itemId}')">🗑️</span>
-                    <h4>${h.folio} - ${h.client}</h4>
+                    <h4>${h.folio || 'Sin folio'} - ${h.client || 'Sin cliente'}</h4>
                     <p>👤 ${h.contact || 'N/A'}</p>
                     <p>📅 ${dateStr} | 💰 ${formatCurrency(total)}</p>
                 `;
@@ -1481,15 +1517,15 @@
             state.quienCotiza = state.quienCotiza || "SHEILA VR";
             state.correoCotiza = state.correoCotiza || "compras@tipsmexico.com.mx";
             state.ubicacion = state.ubicacion || "";
-            state.tiempoEntrega = state.tiempoEntrega || "20 HAB DÍAS EN CASO DE ESTUDIOS. 2 DÍAS HAB POSTERIOR AL PAGO DE LIQUIDACIÓN EN CASO DE CAPACITACIÓN";
-            state.pagoIniciar = state.pagoIniciar || "50% PARA AGENDAR FECHA, 50% EN ENTREGA DE DOCUMENTOS, CARPETAS.";
+            state.tiempoEntrega = state.tiempoEntrega || "35 días hábiles";
+            state.pagoIniciar = state.pagoIniciar || "50% anticipo, 50% al entregar";
             state.discount = state.discount || 0;
             state.discountType = state.discountType || "amount";
             state.useIVA = state.useIVA !== undefined ? state.useIVA : true;
 
-            document.getElementById('client-company').value = state.client;
-            document.getElementById('client-contact').value = state.contact;
-            document.getElementById('ubicacion-proyecto').value = state.ubicacion;
+            document.getElementById('client-company').value = state.client || '';
+            document.getElementById('client-contact').value = state.contact || '';
+            document.getElementById('ubicacion-proyecto').value = state.ubicacion || '';
             document.getElementById('tiempo-entrega').value = state.tiempoEntrega;
             document.getElementById('pago-iniciar').value = state.pagoIniciar;
             document.getElementById('folio-input').value = state.folio;
@@ -1507,7 +1543,7 @@
         async function deleteHistory(id) {
             if (!confirm("¿Eliminar esta cotización del banco?")) return;
 
-            const deleted = await deleteFromSupabase(id);
+            await deleteFromSupabase(id);
 
             let history = JSON.parse(localStorage.getItem('tips_maquila_history') || '[]');
             history = history.filter(h => h.id !== id);
@@ -1543,7 +1579,7 @@
         }
 
         // ============================================================
-        // EXCEL Y PDF
+        // EXCEL Y PDF (versiones simplificadas)
         // ============================================================
 
         function exportToExcel() {
@@ -1553,11 +1589,11 @@
                 'Folio': state.folio,
                 'Empresa': state.client,
                 'Ubicación': state.ubicacion,
-                'Categoría': item.category === "Mannto" ? "Mantenimiento" : item.category,
-                'Servicio': item.norm,
-                'Alcance': item.alcance,
-                'Cantidad': item.qty,
-                'Subtotal Item': item.subtotal
+                'Categoría': item.category || '',
+                'Servicio': item.norm || '',
+                'Alcance': item.alcance || '',
+                'Cantidad': item.qty || 1,
+                'Subtotal Item': item.subtotal || 0
             }));
 
             let subtotalServices = state.items.reduce((sum, item) => sum + (item.subtotal || 0), 0);
@@ -1667,7 +1703,7 @@
                     [{ content: 'CONDICIONES COMERCIALES', colSpan: 2, styles: { fontStyle: 'bold', halign: 'center', fillColor: [31, 56, 100], textColor: [255, 255, 255] } }],
                     ['Forma de pago:', state.pagoIniciar || "50% PARA AGENDAR FECHA, 50% EN ENTREGA DE DOCUMENTOS, CARPETAS."],
                     ['Vigencia de la cotización:', '1 MES'],
-                    ['Tiempo de entrega / ejecución:', state.tiempoEntrega || "20 HAB DÍAS EN CASO DE ESTUDIOS. Y LOS TRÁMITES DE CULMINAN AL INGRESO A LA SECRETARIA CORRESPONDIENTE. LOS TRAMITES QUE ENTREN EN URGENTE AUMENTAN UN 20% PARA ENTREGA DE MENOS DE 15 DÍAS"],
+                    ['Tiempo de entrega / ejecución:', state.tiempoEntrega || "20 HAB DÍAS EN CASO DE ESTUDIOS."],
                     ['Lugar de prestación del servicio:', state.ubicacion || "MÉRIDA, YUCATÁN"],
                     ['Observaciones:', '']
                 ],

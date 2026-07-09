@@ -790,4 +790,588 @@
                     ubicacion: quoteData.ubicacion || '',
                     pricing_type: quoteData.pricingType || 'Maquila',
                     tiempo_entrega: quoteData.tiempoEntrega || '',
-                    pago_iniciar: quoteData.pagoIniciar ||
+                    pago_iniciar: quoteData.pagoIniciar || '',
+                    items: JSON.stringify(quoteData.items || []),
+                    discount: parseFloat(quoteData.discount) || 0,
+                    discount_type: quoteData.discountType || 'amount',
+                    use_iva: quoteData.useIVA !== undefined ? quoteData.useIVA : true,
+                    quien_cotiza: quoteData.quienCotiza || '',
+                    correo_cotiza: quoteData.correoCotiza || '',
+                    updated_at: new Date().toISOString()
+                };
+
+                let result;
+
+                if (quoteData.id) {
+                    result = await supabaseClient
+                        .from('cotizaciones_maquila')
+                        .update(dataToSend)
+                        .eq('id', quoteData.id);
+                } else {
+                    result = await supabaseClient
+                        .from('cotizaciones_maquila')
+                        .insert(dataToSend)
+                        .select();
+                }
+
+                if (result.error) throw result.error;
+
+                if (!quoteData.id && result.data && result.data.length > 0) {
+                    state.id = result.data[0].id;
+                }
+
+                console.log('✅ Guardado en Supabase exitoso');
+                return true;
+
+            } catch (e) {
+                console.error('❌ Error al guardar en Supabase:', e);
+                alert('⚠️ Error al guardar en la nube: ' + e.message + '\n\nLos datos se guardaron localmente.');
+                return false;
+            } finally {
+                isSaving = false;
+                saveBtn.innerHTML = originalText;
+                saveBtn.className = 'btn btn-success';
+            }
+        }
+
+        async function loadFromSupabase() {
+            try {
+                const { data, error } = await supabaseClient
+                    .from('cotizaciones_maquila')
+                    .select('*')
+                    .order('created_at', { ascending: false });
+
+                if (error) throw error;
+
+                const history = (data || []).map(item => ({
+                    id: item.id,
+                    folio: item.folio,
+                    date: item.date,
+                    client: item.client,
+                    contact: item.contact || '',
+                    ubicacion: item.ubicacion || '',
+                    pricingType: item.pricing_type || 'Maquila',
+                    tiempoEntrega: item.tiempo_entrega || '',
+                    pagoIniciar: item.pago_iniciar || '',
+                    items: typeof item.items === 'string' ? JSON.parse(item.items) : (item.items || []),
+                    discount: parseFloat(item.discount) || 0,
+                    discountType: item.discount_type || 'amount',
+                    useIVA: item.use_iva !== undefined ? item.use_iva : true,
+                    quienCotiza: item.quien_cotiza || 'SHEILA VR',
+                    correoCotiza: item.correo_cotiza || 'compras@tipsmexico.com.mx'
+                }));
+
+                localStorage.setItem('tips_maquila_history', JSON.stringify(history));
+                return history;
+
+            } catch (e) {
+                console.error('❌ Error al cargar desde Supabase:', e);
+                return JSON.parse(localStorage.getItem('tips_maquila_history') || '[]');
+            }
+        }
+
+        async function deleteFromSupabase(id) {
+            try {
+                const { error } = await supabaseClient
+                    .from('cotizaciones_maquila')
+                    .delete()
+                    .eq('id', id);
+                if (error) throw error;
+                return true;
+            } catch (e) {
+                console.error('❌ Error al eliminar:', e);
+                return false;
+            }
+        }
+
+        // ============================================================
+        // LOGIN
+        // ============================================================
+
+        window.doLogin = function() {
+            const user = document.getElementById('login-user').value.trim().toUpperCase();
+            const pass = document.getElementById('login-pass').value.trim().toUpperCase();
+            const errorEl = document.getElementById('login-error-msg');
+            const btn = document.getElementById('login-submit-btn');
+
+            if (user === 'CHILE' && pass === 'REYENO') {
+                btn.textContent = '✔ Acceso correcto...';
+                btn.style.background = 'linear-gradient(135deg,#1a8c4e,#28e07a)';
+                const screen = document.getElementById('login-screen');
+                screen.style.transition = 'opacity 0.6s ease';
+                setTimeout(() => {
+                    screen.style.opacity = '0';
+                    setTimeout(() => {
+                        screen.remove();
+                        document.getElementById('main-app').style.display = 'block';
+                        initApp();
+                    }, 650);
+                }, 500);
+            } else {
+                errorEl.innerHTML = '⚠️ Usuario o contraseña incorrectos';
+                setTimeout(() => { errorEl.innerHTML = ''; }, 3500);
+            }
+        };
+
+        // ============================================================
+        // INICIALIZACIÓN
+        // ============================================================
+
+        async function initApp() {
+            if (isAppInitialized) return;
+            isAppInitialized = true;
+
+            document.getElementById('current-date').innerText = state.date;
+            initFolio();
+
+            // Cargar categorías desde pricingData
+            window.groupedData = {};
+            
+            // Verificar si pricingData existe (cargado desde el archivo externo)
+            if (typeof pricingData !== 'undefined' && Array.isArray(pricingData) && pricingData.length > 0) {
+                console.log('✅ pricingData cargado correctamente. Total servicios:', pricingData.length);
+                
+                pricingData.forEach(item => {
+                    if (!window.groupedData[item.category]) window.groupedData[item.category] = [];
+                    window.groupedData[item.category].push(item);
+                });
+
+                const catSelect = document.getElementById('category-select');
+                catSelect.innerHTML = '<option value="">Seleccione...</option>';
+                Object.keys(window.groupedData).forEach(cat => {
+                    const opt = document.createElement('option');
+                    opt.value = cat;
+                    opt.textContent = cat;
+                    catSelect.appendChild(opt);
+                });
+                updateNorms();
+            } else {
+                console.warn('⚠️ pricingData no está definido o está vacío. Verifica que el archivo pricingData.js exista.');
+                alert('⚠️ No se encontró el archivo pricingData.js. Asegúrate de que esté en la misma carpeta.');
+            }
+
+            document.getElementById('quien-cotiza').value = state.quienCotiza;
+            document.getElementById('correo-cotiza').value = state.correoCotiza;
+            document.getElementById('tiempo-entrega').value = state.tiempoEntrega;
+            document.getElementById('pago-iniciar').value = state.pagoIniciar;
+
+            await checkConnection();
+            await loadHistory();
+            renderTable();
+        }
+
+        // ============================================================
+        // FUNCIONES DE LA APP
+        // ============================================================
+
+        function initFolio() {
+            let counter = localStorage.getItem('tips_maquila_folio_counter');
+            if (!counter) { counter = 1; localStorage.setItem('tips_maquila_folio_counter', counter); }
+            state.folio = `COT${counter.toString().padStart(5, '0')}`;
+            document.getElementById('folio-input').value = state.folio;
+        }
+
+        function updateFolio(val) { state.folio = val.trim(); }
+        function updateQuienCotiza(val) { state.quienCotiza = val.trim(); }
+        function updateCorreoCotiza(val) { state.correoCotiza = val.trim(); }
+
+        function selectPredefinedCotiza(val) {
+            const nameInput = document.getElementById('quien-cotiza');
+            const emailInput = document.getElementById('correo-cotiza');
+            if (val === 'Aixa') {
+                state.quienCotiza = "Aixa J. Mora";
+                state.correoCotiza = "proyectos@tipsmexico.com.mx";
+            } else if (val === 'Sheila') {
+                state.quienCotiza = "Ing. Sheila V. Rosas";
+                state.correoCotiza = "sheila.rosas@tipsmexico.com.mx";
+            }
+            nameInput.value = state.quienCotiza;
+            emailInput.value = state.correoCotiza;
+        }
+
+        function updateNorms() {
+            const category = document.getElementById('category-select').value;
+            const normSelect = document.getElementById('norm-select');
+            normSelect.innerHTML = '';
+            if (!category || !window.groupedData[category]) return;
+
+            window.groupedData[category].forEach((item, index) => {
+                const option = document.createElement('option');
+                option.value = index;
+                option.textContent = item.norm || "Servicio sin nombre";
+                normSelect.appendChild(option);
+            });
+        }
+
+        function addItem() {
+            const category = document.getElementById('category-select').value;
+            const normIndex = document.getElementById('norm-select').value;
+
+            if (!category || normIndex === "") { alert("Seleccione categoría y servicio"); return; }
+
+            const itemData = window.groupedData[category][normIndex];
+            state.items.push({
+                category: category,
+                normIndex: parseInt(normIndex),
+                norm: itemData.norm || "Servicio seleccionado",
+                alcance: itemData.alcance || "",
+                qty: 1,
+                subtotal: itemData.priceMaquila || 0
+            });
+            renderTable();
+        }
+
+        function addManualItem() {
+            state.items.push({
+                category: "Manual",
+                normIndex: -1,
+                norm: "Servicio personalizado...",
+                alcance: "Descripción...",
+                qty: 1,
+                subtotal: 0
+            });
+            renderTable();
+        }
+
+        function renderTable() {
+            const body = document.getElementById('quote-body');
+            body.innerHTML = '';
+
+            state.items.forEach((item, index) => {
+                const normText = (item.norm || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                const alcanceText = (item.alcance || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+                body.innerHTML += `
+                <tr>
+                    <td><textarea style="width:100%;min-height:80px;font-weight:bold;padding:5px;border:1px solid transparent;resize:vertical;font-size:0.9rem;background:transparent;" onchange="updateItemNorm(${index}, this.value)" onfocus="this.style.border='1px solid #00c2ff';" onblur="this.style.border='1px solid transparent';">${normText}</textarea></td>
+                    <td><textarea style="width:100%;min-height:80px;padding:5px;border:1px solid transparent;resize:vertical;font-size:0.85rem;background:transparent;" onchange="updateItemAlcance(${index}, this.value)" onfocus="this.style.border='1px solid #00c2ff';" onblur="this.style.border='1px solid transparent';">${alcanceText}</textarea></td>
+                    <td style="text-align:center;vertical-align:middle;"><input type="number" value="${item.qty || 1}" min="1" style="text-align:center;width:60px;border:1px solid transparent;font-size:1rem;font-weight:bold;" onchange="updateItemQty(${index}, this.value)" onfocus="this.style.border='1px solid #00c2ff';" onblur="this.style.border='1px solid transparent';"></td>
+                    <td style="text-align:right;vertical-align:middle;"><input type="number" value="${item.subtotal || 0}" style="text-align:right;width:100px;border:1px solid transparent;font-size:1rem;font-weight:bold;" onchange="updateItemSubtotal(${index}, this.value)" onfocus="this.style.border='1px solid #00c2ff';" onblur="this.style.border='1px solid transparent';"></td>
+                    <td class="remove-btn" style="vertical-align:middle;text-align:center;cursor:pointer;" onclick="removeItem(${index})">✕</td>
+                </tr>
+            `;
+            });
+
+            document.getElementById('global-discount').value = state.discount || 0;
+            document.getElementById('iva-toggle').checked = state.useIVA !== false;
+            updateTotals();
+        }
+
+        function updateItemAlcance(index, val) { state.items[index].alcance = val; }
+        function updateItemQty(index, val) { state.items[index].qty = parseInt(val) || 1; updateTotals(); }
+        function updateItemSubtotal(index, val) { state.items[index].subtotal = parseFloat(val) || 0; updateTotals(); }
+        function updateItemNorm(index, val) { state.items[index].norm = val; }
+        function updateDiscountType() { state.discountType = document.getElementById('discount-type').value; updateTotals(); }
+
+        function updateTotals() {
+            state.discount = parseFloat(document.getElementById('global-discount').value) || 0;
+            state.discountType = document.getElementById('discount-type').value;
+            state.useIVA = document.getElementById('iva-toggle').checked;
+
+            let subtotalServices = state.items.reduce((sum, item) => sum + (item.subtotal || 0), 0);
+            let discountValue = state.discountType === 'percent' ? (subtotalServices * (state.discount / 100)) : state.discount;
+            let discountedSubtotal = subtotalServices - discountValue;
+            if (discountedSubtotal < 0) discountedSubtotal = 0;
+            let iva = state.useIVA ? (discountedSubtotal * 0.16) : 0;
+            let total = discountedSubtotal + iva;
+
+            document.getElementById('subtotal-raw').innerText = formatCurrency(subtotalServices);
+            document.getElementById('iva-amount').innerText = formatCurrency(iva);
+            document.getElementById('total-general').innerText = formatCurrency(total);
+        }
+
+        function removeItem(index) { state.items.splice(index, 1); renderTable(); }
+        function formatCurrency(v) { return new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(v); }
+
+        function resetQuote() {
+            if (state.items.length > 0 && !confirm("¿Nueva cotización? Se perderán los cambios no guardados.")) return;
+            state.discount = 0; state.discountType = "amount"; state.useIVA = true;
+            state.ubicacion = ""; state.tiempoEntrega = "35 días hábiles";
+            state.pagoIniciar = "50% anticipo, 50% al entregar";
+            state.quienCotiza = "SHEILA VR"; state.correoCotiza = "compras@tipsmexico.com.mx";
+            state.id = null; state.items = [];
+
+            document.getElementById('client-company').value = "";
+            document.getElementById('client-contact').value = "";
+            document.getElementById('ubicacion-proyecto').value = "";
+            document.getElementById('tiempo-entrega').value = state.tiempoEntrega;
+            document.getElementById('pago-iniciar').value = state.pagoIniciar;
+            document.getElementById('global-discount').value = 0;
+            document.getElementById('discount-type').value = "amount";
+            document.getElementById('iva-toggle').checked = true;
+            document.getElementById('quien-cotiza').value = state.quienCotiza;
+            document.getElementById('correo-cotiza').value = state.correoCotiza;
+            document.getElementById('select-predefined-cotiza').value = "";
+            initFolio(); renderTable();
+        }
+
+        // ============================================================
+        // HISTORIAL
+        // ============================================================
+
+        async function saveToBank() {
+            state.client = document.getElementById('client-company').value.trim();
+            state.contact = document.getElementById('client-contact').value.trim();
+            state.ubicacion = document.getElementById('ubicacion-proyecto').value.trim();
+            state.tiempoEntrega = document.getElementById('tiempo-entrega').value;
+            state.pagoIniciar = document.getElementById('pago-iniciar').value;
+            state.discount = parseFloat(document.getElementById('global-discount').value) || 0;
+            state.discountType = document.getElementById('discount-type').value;
+            state.useIVA = document.getElementById('iva-toggle').checked;
+            state.quienCotiza = document.getElementById('quien-cotiza').value.trim();
+            state.correoCotiza = document.getElementById('correo-cotiza').value.trim();
+
+            if (!state.client) { alert("Ingrese el nombre de la empresa cliente"); return; }
+            if (state.items.length === 0) { alert("Agregue al menos un servicio"); return; }
+
+            const isNew = !state.id;
+            const success = await saveToSupabase(state);
+
+            if (success) {
+                if (isNew) {
+                    let counter = parseInt(localStorage.getItem('tips_maquila_folio_counter')) || 1;
+                    localStorage.setItem('tips_maquila_folio_counter', counter + 1);
+                }
+                await loadHistory();
+                alert("✅ Cotización guardada en la nube exitosamente");
+            } else {
+                let history = JSON.parse(localStorage.getItem('tips_maquila_history') || '[]');
+                const existingIdx = history.findIndex(h => h.folio === state.folio);
+                if (existingIdx >= 0) { history[existingIdx] = JSON.parse(JSON.stringify(state)); } 
+                else { history.unshift(JSON.parse(JSON.stringify(state))); }
+                localStorage.setItem('tips_maquila_history', JSON.stringify(history));
+                loadHistory();
+            }
+        }
+
+        async function loadHistory() {
+            const list = document.getElementById('history-list');
+            list.innerHTML = '<p style="text-align:center;color:#999;margin-top:20px;">Cargando...</p>';
+
+            const history = await loadFromSupabase();
+            list.innerHTML = '';
+
+            if (!history || history.length === 0) {
+                list.innerHTML = '<p style="text-align:center;color:#999;margin-top:20px;">No hay cotizaciones guardadas</p>';
+                return;
+            }
+
+            history.forEach((h) => {
+                const item = document.createElement('div');
+                item.className = 'history-item';
+                item.onclick = () => loadQuote(h.id);
+
+                let subtotal = (h.items || []).reduce((sum, i) => sum + (i.subtotal || 0), 0);
+                let discountValue = h.discountType === 'percent' ? (subtotal * ((h.discount || 0) / 100)) : (h.discount || 0);
+                let total = (subtotal - discountValue);
+                if (h.useIVA !== false) total *= 1.16;
+
+                item.innerHTML = `
+                    <span class="delete-hist" onclick="event.stopPropagation(); deleteHistory('${h.id}')">🗑️</span>
+                    <h4>${h.folio || 'Sin folio'} - ${h.client || 'Sin cliente'}</h4>
+                    <p>👤 ${h.contact || 'N/A'}</p>
+                    <p>📅 ${h.date || 'Fecha no disponible'} | 💰 ${formatCurrency(total)}</p>
+                `;
+                list.appendChild(item);
+            });
+        }
+
+        async function loadQuote(id) {
+            const history = await loadFromSupabase();
+            const q = history.find(h => h.id === id);
+            if (!q) { alert('No se encontró la cotización'); return; }
+
+            state = JSON.parse(JSON.stringify(q));
+            state.id = q.id;
+
+            document.getElementById('client-company').value = state.client || '';
+            document.getElementById('client-contact').value = state.contact || '';
+            document.getElementById('ubicacion-proyecto').value = state.ubicacion || '';
+            document.getElementById('tiempo-entrega').value = state.tiempoEntrega || '35 días hábiles';
+            document.getElementById('pago-iniciar').value = state.pagoIniciar || '50% anticipo, 50% al entregar';
+            document.getElementById('folio-input').value = state.folio;
+            document.getElementById('global-discount').value = state.discount || 0;
+            document.getElementById('discount-type').value = state.discountType || 'amount';
+            document.getElementById('iva-toggle').checked = state.useIVA !== false;
+            document.getElementById('quien-cotiza').value = state.quienCotiza || 'SHEILA VR';
+            document.getElementById('correo-cotiza').value = state.correoCotiza || 'compras@tipsmexico.com.mx';
+            document.getElementById('select-predefined-cotiza').value = "";
+
+            renderTable();
+            toggleHistory();
+        }
+
+        async function deleteHistory(id) {
+            if (!confirm("¿Eliminar esta cotización del banco?")) return;
+            await deleteFromSupabase(id);
+            let history = JSON.parse(localStorage.getItem('tips_maquila_history') || '[]');
+            history = history.filter(h => h.id !== id);
+            localStorage.setItem('tips_maquila_history', JSON.stringify(history));
+            await loadHistory();
+        }
+
+        async function syncFromCloud() {
+            const btn = document.getElementById('sync-btn');
+            btn.innerHTML = '⏳ Sincronizando...';
+            btn.className = 'btn btn-sync loading';
+            try {
+                await loadHistory();
+                alert('✅ Datos sincronizados con la nube');
+            } catch (e) { alert('⚠️ Error al sincronizar: ' + e.message); } 
+            finally { btn.innerHTML = '🔄 Sincronizar'; btn.className = 'btn btn-sync'; }
+        }
+
+        function toggleHistory() {
+            document.getElementById('history-panel').classList.toggle('open');
+            document.getElementById('overlay').classList.toggle('visible');
+        }
+
+        // ============================================================
+        // EXCEL Y PDF
+        // ============================================================
+
+        function exportToExcel() {
+            if (state.items.length === 0) return alert("Agregue servicios primero");
+            const rows = state.items.map(item => ({
+                'Folio': state.folio, 'Empresa': state.client, 'Ubicación': state.ubicacion,
+                'Categoría': item.category || '', 'Servicio': item.norm || '', 'Alcance': item.alcance || '',
+                'Cantidad': item.qty || 1, 'Subtotal Item': item.subtotal || 0
+            }));
+
+            let subtotalServices = state.items.reduce((sum, item) => sum + (item.subtotal || 0), 0);
+            let discountValue = state.discountType === 'percent' ? (subtotalServices * ((state.discount || 0) / 100)) : (state.discount || 0);
+            let discounted = subtotalServices - discountValue;
+            let iva = state.useIVA ? discounted * 0.16 : 0;
+
+            rows.push({});
+            rows.push({ 'Servicio': 'SUBTOTAL', 'Subtotal Item': subtotalServices });
+            rows.push({ 'Servicio': 'DESCUENTO' + (state.discountType === 'percent' ? ` (${state.discount}%)` : ''), 'Subtotal Item': discountValue });
+            rows.push({ 'Servicio': 'IVA (16%)', 'Subtotal Item': iva });
+            rows.push({ 'Servicio': 'TOTAL', 'Subtotal Item': discounted + iva });
+
+            const ws = XLSX.utils.json_to_sheet(rows);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Cotización");
+            XLSX.writeFile(wb, `Cotizacion_Maquila_${state.folio}.xlsx`);
+        }
+
+        function generatePDF() {
+            if (state.items.length === 0) return alert("Agregue servicios primero");
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF('p', 'pt', 'letter');
+
+            state.contact = document.getElementById('client-contact').value;
+            state.client = document.getElementById('client-company').value;
+            state.folio = document.getElementById('folio-input').value.trim();
+            state.ubicacion = document.getElementById('ubicacion-proyecto').value.trim();
+            state.tiempoEntrega = document.getElementById('tiempo-entrega').value;
+            state.pagoIniciar = document.getElementById('pago-iniciar').value;
+            state.quienCotiza = document.getElementById('quien-cotiza').value.trim();
+            state.correoCotiza = document.getElementById('correo-cotiza').value.trim();
+
+            doc.autoTable({
+                startY: 100,
+                body: [
+                    ['Folio:', state.folio, 'Fecha:', state.date],
+                    [{ content: 'DATOS DEL CLIENTE', colSpan: 4, styles: { fontStyle: 'bold', halign: 'center', fillColor: [31, 56, 100], textColor: [255, 255, 255] } }],
+                    [{ content: 'Razón Social:', styles: { fontStyle: 'bold', fillColor: [213, 220, 228] } }, { content: state.client || "", colSpan: 3 }],
+                    [{ content: 'Atención a:', styles: { fontStyle: 'bold', fillColor: [213, 220, 228] } }, { content: state.contact || "", colSpan: 3 }]
+                ],
+                theme: 'grid',
+                styles: { font: 'helvetica', fontSize: 10, cellPadding: 5 },
+                columnStyles: { 0: { fontStyle: 'bold', fillColor: [213, 220, 228], cellWidth: 80, halign: 'right' }, 1: { cellWidth: 160 }, 2: { fontStyle: 'bold', fillColor: [213, 220, 228], cellWidth: 80, halign: 'right' }, 3: { cellWidth: 210 } }
+            });
+
+            let partidaIndex = 1;
+            let tableData = state.items.map((item) => {
+                const row = [partidaIndex.toString(), item.norm || '', item.alcance || '', formatCurrency(item.subtotal || 0)];
+                partidaIndex++;
+                return row;
+            });
+
+            let subtotalServices = state.items.reduce((sum, item) => sum + (item.subtotal || 0), 0);
+            let discountValue = state.discountType === 'percent' ? (subtotalServices * ((state.discount || 0) / 100)) : (state.discount || 0);
+            let subtotalNeto = subtotalServices - discountValue;
+            let iva = state.useIVA ? (subtotalNeto * 0.16) : 0;
+            let total = subtotalNeto + iva;
+
+            tableData.push([
+                { content: 'Subtotal', styles: { fontStyle: 'bold', halign: 'right' } },
+                { content: formatCurrency(subtotalNeto), styles: { halign: 'right' } }
+            ]);
+            tableData.push([
+                { content: 'IVA', styles: { fontStyle: 'bold', halign: 'right' } },
+                { content: formatCurrency(iva), styles: { halign: 'right' } }
+            ]);
+            tableData.push([
+                { content: 'TOTAL', styles: { fontStyle: 'bold', halign: 'right', fillColor: [31, 56, 100], textColor: [255, 255, 255] } },
+                { content: formatCurrency(total), styles: { fontStyle: 'bold', halign: 'right', fillColor: [31, 56, 100], textColor: [255, 255, 255] } }
+            ]);
+
+            doc.autoTable({
+                startY: doc.lastAutoTable.finalY + 15,
+                head: [['PART.', 'Descripción del concepto / servicio', 'Alcances', 'Importe']],
+                body: tableData,
+                theme: 'grid',
+                headStyles: { fillColor: [31, 56, 100], textColor: [255, 255, 255], fontStyle: 'bold' },
+                styles: { font: 'helvetica', fontSize: 8, cellPadding: 5 },
+                columnStyles: { 0: { cellWidth: 40, halign: 'center' }, 1: { cellWidth: 160 }, 2: { cellWidth: 240 }, 3: { cellWidth: 90, halign: 'right' } }
+            });
+
+            doc.autoTable({
+                startY: doc.lastAutoTable.finalY + 15,
+                body: [
+                    [{ content: 'CONDICIONES COMERCIALES', colSpan: 2, styles: { fontStyle: 'bold', halign: 'center', fillColor: [31, 56, 100], textColor: [255, 255, 255] } }],
+                    ['Forma de pago:', state.pagoIniciar || "50% anticipo, 50% al entregar"],
+                    ['Vigencia:', '1 MES'],
+                    ['Tiempo de entrega:', state.tiempoEntrega || "35 días hábiles"],
+                    ['Lugar:', state.ubicacion || "MÉRIDA, YUCATÁN"]
+                ],
+                theme: 'grid',
+                styles: { font: 'helvetica', fontSize: 9, cellPadding: 5 },
+                columnStyles: { 0: { fontStyle: 'bold', cellWidth: 160, fillColor: [213, 220, 228] } }
+            });
+
+            let finalY = doc.lastAutoTable.finalY + 30;
+            let elaboro = (state.quienCotiza || "SHEILA VR") + "\nELABORÓ / TIPS MAQUILA\nNombre: __________________________\nPuesto: ___________________________\nFecha: ____________________________";
+            let autoriza = "AUTORIZA / CLIENTE\nNombre: __________________________\nPuesto: ___________________________\nFecha: ____________________________";
+
+            doc.autoTable({
+                startY: finalY,
+                body: [[{ content: elaboro, styles: { halign: 'center', cellPadding: 15 } }, { content: autoriza, styles: { halign: 'center', cellPadding: 15 } }]],
+                theme: 'grid',
+                styles: { fontSize: 9 }
+            });
+
+            const pageCount = doc.internal.getNumberOfPages();
+            for (let i = 1; i <= pageCount; i++) {
+                doc.setPage(i);
+                doc.setFont("helvetica", "bold");
+                doc.setFontSize(28);
+                doc.setTextColor(31, 56, 100);
+                doc.text("TIPS MAQUILA", 306, 50, { align: "center" });
+                doc.setFontSize(11);
+                doc.setTextColor(192, 0, 0);
+                doc.text("C O T I Z A C I Ó N", 306, 68, { align: "center" });
+                doc.setDrawColor(192, 0, 0);
+                doc.setLineWidth(1.5);
+                doc.line(40, 75, 572, 75);
+                doc.setDrawColor(31, 56, 100);
+                doc.setLineWidth(1.0);
+                doc.line(40, 740, 572, 740);
+                doc.setFont("helvetica", "bold");
+                doc.setFontSize(9);
+                doc.setTextColor(31, 56, 100);
+                doc.text("Tel. 56 6409 7173   |   compras@tipsmexico.com.mx", 306, 755, { align: "center" });
+                doc.setFont("helvetica", "normal");
+                doc.setFontSize(8);
+                doc.setTextColor(89, 89, 89);
+                doc.text(`Página ${i} de ${pageCount}`, 306, 770, { align: "center" });
+            }
+
+            let clientNameStr = document.getElementById('client-company').value.trim() || 'Cliente';
+            doc.save(`${state.folio}_${clientNameStr}.pdf`);
+        }
+    </script>
+</body>
+</html>
